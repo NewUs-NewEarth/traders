@@ -9,6 +9,10 @@ import KakaoMap from "./components/product/KakaoMap";
 import LocationComponent from "./components/product/LocationComponent";
 import ProductDetails from "./components/product/ProductDetails";
 import ProductList from "./components/product/ProductList";
+import Chat1 from "./components/chat/Chat1";
+import ChatMain from "./components/ChatMain";
+import ChatApp from "./components/chat/ChatApp";
+import ChatBox from "./components/chat/ChatBox";
 
 function App() {
   return (
@@ -32,6 +36,9 @@ function App() {
         </li>
         <li>
           <Link to="/login">login</Link>
+        </li>
+        <li>
+          <Link to="/chat">chat</Link>
         </li>
       </ul>
 
@@ -59,6 +66,20 @@ function App() {
           <GreenPay />
         </Route>
         <Route path="/payment/gpay_register" component={PayRegister} />
+
+
+        <Route path="/chat" exact>
+          <ChatApp />
+        </Route>
+      
+        <Route path="/chat/roomNum/:roomNum" component={ChatBox} ><ChatBox></ChatBox></Route>
+
+
+
+
+
+       
+       
       </Switch>
     </div>
   );
