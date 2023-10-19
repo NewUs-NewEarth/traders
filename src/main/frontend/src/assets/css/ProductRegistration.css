@@ -1,0 +1,176 @@
+/**
+ * @author hyunseul
+ * @create date 2023-10-18 11:40:24
+ * @modify date 2023-10-19 11:36:08
+ */
+
+
+.product{
+    margin: auto;
+    /* background-color: aqua; */
+    text-align: left;
+    color: rgb(65, 65, 65);
+
+}
+
+.product-header {
+    height: 80px;
+    /* background-color: burlywood; */
+    font-size: 21pt;
+    font-weight: 500;
+    align-items: center;
+    text-align: left;
+    position: relative;
+    margin: auto;
+    /* background-color: rgb(211, 211, 211); */
+}
+
+.product-hr{
+    margin-top : 0px; 
+}
+
+/* .product-row-sm-1{
+    justify-content: center;
+    align-content: flex-start;
+    height: 100px;
+} */
+
+.product-col-sm-1,.sm-col-img{
+    top:30px;
+    font-size: 13pt;
+    height: 100px;
+    position:relative;
+    text-align: center;
+}
+
+.sm-input{
+    width: 100%;
+}
+
+
+.sm-input-price{
+    width: 45%;
+}
+
+
+
+.product-textarea{
+    resize: none;
+    width: 100%;
+    height: 270px !important;
+
+
+
+}
+
+
+.sm-input ,.sm-input-price, .product-textarea {
+    height: 50px;
+    position:relative;
+    top: 20px;
+    outline-color: #198754;
+    outline-offset: 1px;
+    font-size: 11pt;
+    
+}
+
+.product-textarea {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+
+#custom-placeholder::placeholder{
+    font-size: 11pt;
+    color: #999;
+    position:relative;
+    top: 10px;
+    left: 5px;
+    
+}
+
+#custom-placeholder-1::placeholder{
+    font-size: 11pt; 
+    color: #999;
+    
+    
+}
+
+/* 상품설명 row */
+.product-row-sm-2{
+    height: 300px;
+}
+
+.custom-radio{
+    position: relative;
+    top: 30px;
+}
+
+.custom-radio input[type="radio"] {
+
+    display: none;
+  }
+  
+  .custom-radio label {
+    display: flex;
+    align-items: center; /* 텍스트를 수직 가운데 정렬 */
+  }
+  
+  .custom-radio label::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid #198754;
+    border-radius: 50%; /* 바깥쪽 원 모양 설정 */
+    margin-right: 10px; /* 원과 텍스트 사이 간격 조절 */
+    position: relative;
+  }
+  
+   .custom-radio input[type="radio"]:checked + label::before {
+    /* background-color:#871919; */
+    border-color:#198754; /* 체크된 상태의 테두리 색상 */
+
+  } 
+  
+  .custom-radio input[type="radio"]:checked + label::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background-color: #198754;
+    border-radius: 50%;
+    position: absolute;
+  }
+  
+.btn-upload{
+    border: 1px solid#d0d0d0;
+    color: rgb(88, 88, 88);
+    width: 120px;
+    height: 33px;
+    border-radius: 5px;
+    position: relative;
+    top: 30px;
+    text-align: center;
+    cursor: pointer;
+
+   
+}
+  
+.file-text{
+    position: relative;
+    top:3px;
+    font-size: 12pt;
+}  
+  
+.saveButton{
+    align-content: center !important;
+    margin-right: 20px !important;
+}
+
+.delete-btn{
+    position: relative;
+    width: 550px;
+    height: 30px;
+    /* right: 500px; */
+    bottom: 290px;
+    color: #198754;
+}

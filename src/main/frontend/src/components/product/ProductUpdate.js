@@ -1,23 +1,27 @@
 /**
  * @author wheesunglee
  * @create date 2023-10-08 22:08:34
- * @modify date 2023-10-12 14:12:39
+ * @modify date 2023-10-18 22:56:00
  */
 
 import axios from "axios";
-import React, { useState } from "react";
-import { useHistory, useLocation } from "react-router-dom/cjs/react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useHistory, withRouter } from "react-router-dom";
 import ImagePreview from "./ImagePreview";
 import KakaoMapModal from "./KakaoMapModal";
 
-const ProductUpdate = () => {
-  const location = useLocation();
+const ProductUpdate = (props) => {
   const history = useHistory();
   const form = new FormData();
 
-  const [data, setData] = useState(location.state.data);
+  const [data, setData] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [removedFiles, setRemovedFiles] = useState([]);
+
+  useEffect(() => {
+    const { location } = props;
+    setData(location.state);
+  }, []);
 
   const {
     id,
@@ -31,6 +35,7 @@ const ProductUpdate = () => {
   } = data;
 
   const changeInput = (evt) => {
+    console.log(evt.target);
     const { name, value, type } = evt.target;
 
     if (type === "file") {
@@ -81,10 +86,13 @@ const ProductUpdate = () => {
         console.log(errorResponse);
       }
     }
-    history.push("/");
+    setTimeout(() => {
+      history.push("/products");
+    }, 500);
   };
 
   const submitData = () => {
+    console.log(data);
     newFiles.forEach((file) => {
       form.append("files", file);
     });
@@ -95,7 +103,7 @@ const ProductUpdate = () => {
     );
     try {
       axios
-        .put(`/api/products/update/${id}`, form, {
+        .put(`http://localhost:8080/api/products/update/${id}`, form, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -107,86 +115,92 @@ const ProductUpdate = () => {
         console.log(errorResponse);
       }
     }
-    history.push("/");
+
+    setTimeout(() => {
+      history.push("/products");
+    }, 500);
   };
 
   return (
-    <div>
-      <h1> 물품 수정 양식</h1>
-      제목
-      <input type="text" name="name" value={name} onChange={changeInput} />
-      <br />
-      가격
-      <input type="text" name="price" value={price} onChange={changeInput} />
-      <br />
-      상세설명
-      <textarea
-        name="description"
-        value={description}
-        onChange={changeInput}
-        rows={10}
-      />
-      <br />
-      <input
-        type="radio"
-        name="category"
-        value="furniture"
-        onChange={changeInput}
-        checked={category === "furniture"}
-      />
-      가구
-      <input
-        type="radio"
-        name="category"
-        value="pet"
-        onChange={changeInput}
-        checked={category === "pet"}
-      />
-      반려동물 용품
-      <input
-        type="radio"
-        name="category"
-        value="etc"
-        onChange={changeInput}
-        checked={category === "etc"}
-      />
-      기타
-      <br />
-      거래장소 정하기
-      <KakaoMapModal onMapSubmit={handleMapSubmit} />
-      <br />
-      <label for="files">
-        <div
-          style={{
-            border: "1px solid rgb(77,77,77)",
-            width: "150px",
-            height: "30px",
-            borderRadius: "10px",
-          }}
-        >
-          파일 업로드하기
-        </div>
-      </label>
-      <input
-        name="files"
-        id="files"
-        type="file"
-        accept="image/png, image/jpeg"
-        onChange={changeInput}
-        style={{ display: "none" }}
-      />
-      {images.map((image, index) => (
-        <div key={index}>
-          <img src={image.filepath} width={200} alt={`Image ${index}`} />
-          <button onClick={() => removeFile(index)}>삭제</button>
-        </div>
-      ))}
-      <ImagePreview files={newFiles} deleteFile={deleteFile} />
-      <br />
-      <button onClick={submitData}>수정하기</button>
-      <button onClick={deleteProduct}>삭제하기</button>
-    </div>
+    <>
+      <div>
+        <h1> 물품 수정 양식</h1>
+        제목
+        <input type="text" name="name" value={name} onChange={changeInput} />
+        <br />
+        가격
+        <input type="text" name="price" value={price} onChange={changeInput} />
+        <br />
+        상세설명
+        <textarea
+          name="description"
+          value={description}
+          onChange={changeInput}
+          rows={10}
+        />
+        <br />
+        <input
+          type="radio"
+          name="category"
+          value="furniture"
+          onChange={changeInput}
+          checked={category === "furniture"}
+        />
+        가구
+        <input
+          type="radio"
+          name="category"
+          value="pet"
+          onChange={changeInput}
+          checked={category === "pet"}
+        />
+        반려동물 용품
+        <input
+          type="radio"
+          name="category"
+          value="etc"
+          onChange={changeInput}
+          checked={category === "etc"}
+        />
+        기타
+        <br />
+        거래장소 정하기
+        <KakaoMapModal onMapSubmit={handleMapSubmit} />
+        <br />
+        <label for="files">
+          <div
+            style={{
+              border: "1px solid rgb(77,77,77)",
+              width: "150px",
+              height: "30px",
+              borderRadius: "10px",
+            }}
+          >
+            파일 업로드하기
+          </div>
+        </label>
+        <input
+          name="files"
+          id="files"
+          type="file"
+          accept="image/png, image/jpeg"
+          onChange={changeInput}
+          style={{ display: "none" }}
+        />
+        {images &&
+          images.map((image, index) => (
+            <div key={index}>
+              <img src={image.filepath} width={200} alt={`Image ${index}`} />
+              <button onClick={() => removeFile(index)}>삭제</button>
+            </div>
+          ))}
+        <ImagePreview files={newFiles} deleteFile={deleteFile} />
+        <br />
+        <button onClick={submitData}>수정하기</button>
+        <button onClick={deleteProduct}>삭제하기</button>
+      </div>
+    </>
   );
 };
 
-export default ProductUpdate;
+export default withRouter(ProductUpdate);

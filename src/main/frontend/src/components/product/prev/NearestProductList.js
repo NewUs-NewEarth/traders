@@ -1,13 +1,21 @@
 /**
+ * @author jeongyearim
+ * @email [example@mail.com]
+ * @create date 2023-09-26 13:22:21
+ * @modify date 2023-10-18 16:26:12
+ * @desc [현재 위치의 경도,위도를 띄운다.]
+ */
+/**
  * @author wheesunglee
- * @create date 2023-09-20 10:19:28
- * @modify date 2023-10-18 16:37:38
+ * @create date 2023-10-17 01:55:00
+ * @modify date 2023-10-17 01:55:00
  */
 
 import React, { useEffect, useState } from "react";
 import { Card } from "react-bootstrap";
 import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
-const ProductList = ({ product }) => {
+
+const NearestProductList = ({ product }) => {
   const [images, setImages] = useState();
   const history = useHistory();
 
@@ -50,4 +58,5 @@ const ProductList = ({ product }) => {
     </>
   );
 };
-export default ProductList;
+
+export default NearestProductList;

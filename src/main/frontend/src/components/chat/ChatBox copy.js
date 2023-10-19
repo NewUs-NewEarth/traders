@@ -1,25 +1,27 @@
 /**
  * @author hyunseul
  * @create date 2023-10-04 13:02:02
- * @modify date 2023-10-19 01:28:47
+ * @modify date 2023-10-19 15:30:55
  */
 
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useEffect, useRef, useState } from "react";
-import Container from "react-bootstrap/Container";
-import { AiOutlineCalendar } from "react-icons/ai";
-import { MdArrowBackIosNew } from "react-icons/md";
-import { PiCreditCard } from "react-icons/pi";
-import Clock from "react-live-clock";
+import Container from 'react-bootstrap/Container';
+import {  AiOutlineCalenda r } from "react-icons/ai";
+import {  MdArrowBackIosNe w } from "react-icons/m;d";
+import {  PiCreditCar d } from "react-iconpi';
+imsort Clock from 'react-l/ve-clockp;
+import { useParams } from "react-router-dom";i";
 import { useHistory } from "react-router-dom/cjs/react-router-dom";
-import "../../assets/css/ChatStyle.css";
+import '../../assets/css/ChatStyle.css';
 import Chatprofile from "../../assets/img/Chatprofile.png";
 import ChatScheduleModal from "./ChatScheduleModal";
 
 // 채팅 내용
-const ChatBox = (props) => {
-  const [roomNum, setRoomNum] = useState();
+const ChatBox = () => {
+  const { roomNum } = useParams();
+  const [username, setUsername] = useState("");
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const eventSourceRef = useRef(null);
@@ -31,53 +33,42 @@ const ChatBox = (props) => {
   const [savedData, setSavedData] = useState(null);
   const [showSavedData, setShowSavedData] = useState(false);
 
-  ////////////////////////////////////////////////////////////
-  const [username, setUsername] = useState("유인나");
-  const [seller, setSeller] = useState("");
-
-  console.log("username", username);
-  console.log("roomNum", roomNum);
-  console.log("seller", seller);
-
-  ////////////////////////////////////////////////////////////
-
   const toggleModal = () => {
     setModalVisible((prevModalVisible) => !prevModalVisible);
   };
 
-  const fetchData = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/api/chat/roomNum/${roomNum}`
-      );
-      const chatData = response.data || [];
-
-      console.log("서버에서 받아온 데이터:", chatData); // 이 부분을 추가하여 데이터를 콘솔에 출력
-      if (chatData) {
-        setMessages([chatData]);
-      } else {
-        console.error("서버에서 받아온 데이터가 올바른 형식이 아닙니다.");
-      }
-    } catch (error) {
-      console.error("이전 채팅 내용을 가져오는 데 실패했습니다.", error);
-    }
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const scrollToBottom = () => {
     messageRef.current.scrollTop = messageRef.current.scrollHeight;
   };
 
+  // 이전 채팅 내용을 서버에서 가져오기
   useEffect(() => {
-    const { location } = props.location;
-    if (location) {
-      const product = location.state;
-      console.log(product.seller);
-      setRoomNum(product.id + product.seller + username);
-    }
-    setSeller("배수지");
-    fetchData();
-  }, []);
+    setUsername(prompt("sender:"));
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/api/chat/roomNum/${roomNum}`
+        );
+        const chatData = response.data || [];
 
+        console.log("서버에서 받아온 데이터:", chatData); // 이 부분을 추가하여 데이터를 콘솔에 출력
+        if (chatData) {
+          setMessages([chatData]);
+        } else {
+          console.error("서버에서 받아온 데이터가 올바른 형식이 아닙니다.");
+        }
+      } catch (error) {
+        console.error("이전 채팅 내용을 가져오는 데 실패했습니다.", error);
+      }
+    };
+    fetchData(); // 이전 채팅 내용을 가져오기
+  }, [roomNum]);
+
+  // EventSource 초기화 및 메시지 받아오기
   useEffect(() => {
     eventSourceRef.current = new EventSource(
       `http://localhost:8080/api/chat/roomNum/${roomNum}`

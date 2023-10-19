@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,8 +27,8 @@ import com.newus.traders.product.form.ProductForm;
 import com.newus.traders.product.repository.ImageRepository;
 import com.newus.traders.product.repository.ProductRepository;
 import com.newus.traders.product.type.ProductStatus;
-import com.newus.traders.redis.service.RedisService;
-import com.newus.traders.redis.service.RedisService;
+import com.newus.traders.user.entity.User;
+import com.newus.traders.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,10 +38,12 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ImageRepository imageRepository;
-    private final RedisService redisService;
+    private final UserRepository userRepository;
+    // private final RedisService redisService;
 
     public List<ProductDto> getAllProducts() {
-        List<Product> productList = productRepository.findByIsDeletedFalse();
+
+        List<Product> productList = productRepository.findAll();
 
         if (productList.size() == 0) {
             // 리스트가 0일 경우에 --- 메세지를 좀 수정할 필요는 보임!
@@ -57,7 +60,7 @@ public class ProductService {
             // Object objectCount = redisService.countLikes(product.getId());
 
             // if (objectCount != null) {
-            //     productDto.setLikes((Long) objectCount);
+            // productDto.setLikes((Long) objectCount);
             // }
 
             // 임시로!!!!!!!!!!!!!!!!!!
@@ -70,7 +73,7 @@ public class ProductService {
 
     public ProductDto getProduct(Long productId) {
 
-        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
         ProductDto productDto = new ProductDto(product);
@@ -84,9 +87,8 @@ public class ProductService {
         // Object objectCount = redisService.countLikes(product.getId());
 
         // if (objectCount != null) {
-        //     productDto.setLikes((Long) objectCount);
+        // productDto.setLikes((Long) objectCount);
         // }
-
         return productDto;
     }
 
@@ -142,11 +144,16 @@ public class ProductService {
     }
 
     @Transactional
-    public String registerProduct(ProductForm productForm, List<MultipartFile> files) {
+    public String registerProduct(UserDetails userDetails, ProductForm productForm, List<MultipartFile> files) {
+
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Product product = new Product(user, productForm);
+
+        productRepository.save(product);
 
         try {
-            Product product = new Product(productForm);
-            productRepository.save(product);
 
             saveImage(files, product);
 
@@ -159,48 +166,56 @@ public class ProductService {
     }
 
     @Transactional
-    public String updateProduct(Long productId, ProductForm productForm, List<MultipartFile> newFiles,
-            List<Integer> removedFiles) {
+    public String updateProduct(UserDetails userDetails, Long productId, ProductForm productForm,
+            List<MultipartFile> newFiles, List<Integer> removedFiles) {
 
-        // Product product = productRepository.findByIdAndIsDeletedFalse(productId);
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // if (product == null) {
-        // throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
-        // }
-        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if (!product.getStatus().equals(ProductStatus.AVAILABLE)) {
+        if (user != product.getSeller() || !product.getStatus().equals(ProductStatus.AVAILABLE)) {
+
             throw new CustomException(ErrorCode.PRODUCT_NOT_UPDATED);
         }
 
+        product.updateProduct(productForm);
+
+        productRepository.save(product);
+
         try {
-            product.updateProduct(productForm);
+            if (newFiles.size() != 0) {
+                System.out.println("saveImage시작");
+                saveImage(newFiles, product);
+            }
 
-            productRepository.save(product);
+            if (removedFiles.size() != 0) {
+                System.out.println("deleteImage시작");
 
-            saveImage(newFiles, product);
-
-            deleteImage(removedFiles);
+                deleteImage(removedFiles);
+            }
 
         } catch (Exception exception) {
-            throw new CustomException(ErrorCode.PRODUCT_NOT_SAVED);
+            System.out.println(exception.getMessage());
+            throw new CustomException(ErrorCode.PRODUCT_NOT_UPDATED);
         }
 
         return "물품 수정을 완료하였습니다.";
     }
 
-    public String deleteProduct(Long productId) {
+    public String deleteProduct(UserDetails userDetails, Long productId) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // Product product = productRepository.findByIdAndIsDeletedFalse(productId);
-
-        // if (product == null) {
-        // throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
-        // }
-        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        product.setIsDeleted();
+        if (user != product.getSeller()) {
+            throw new CustomException(ErrorCode.PRODUCT_NOT_DELETED);
+        }
+
+        productRepository.deleteById(product.getId());
 
         List<Integer> imagesToDelete = product.getImages().stream()
                 .map(image -> image.getId())
@@ -210,6 +225,8 @@ public class ProductService {
             deleteImage(imagesToDelete);
 
         } catch (Exception exception) {
+            System.out.println(exception.getMessage());
+
             throw new CustomException(ErrorCode.PRODUCT_NOT_DELETED);
         }
 
@@ -218,21 +235,15 @@ public class ProductService {
 
     public String purchaseProduct(Long productId) {
 
-        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
-        // Product product = productRepository.findByIdAndIsDeletedFalse(productId);
 
         if (product == null) {
             throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         product.purchaseProduct();
 
-        try {
-            productRepository.save(product);
-
-        } catch (Exception exception) {
-            throw new CustomException(ErrorCode.PRODUCT_NOT_SAVED);
-        }
+        productRepository.save(product);
 
         return "물품이 판매되었습니다.";
     }
@@ -257,12 +268,11 @@ public class ProductService {
         List<ProductDto> nearestProductDtoList = new ArrayList<>();
 
         for (Product product : nearestProductList) {
-            //System.out.println(product.getName());
+            // System.out.println(product.getName());
             nearestProductDtoList.add(new ProductDto(product));
         }
 
         return nearestProductDtoList;
     }
 
-    
 }

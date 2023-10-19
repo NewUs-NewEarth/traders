@@ -1,0 +1,70 @@
+/**
+ * @author wheesunglee
+ * @create date 2023-10-17 19:29:09
+ * @modify date 2023-10-18 15:28:53
+ */
+
+.justify-content-center {
+  justify-content: center;
+}
+.text-justify {
+  text-align: justify;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.btn-1 {
+  background-color: #fff;
+  color: #198754;
+  border-radius: 5px;
+  border: #198754;
+  width: 150px;
+  height: 50px;
+}
+
+.pd-l {
+  padding-left: 0.25rem;
+}
+.ml-2 {
+  margin-left: 0.5rem;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.btn-2 {
+  background-color: #198754 !important;
+  border-radius: 5px;
+  color: #fff;
+}
+.text-right{
+    text-align: right;
+
+}
+
+.col-right-align {
+  text-align: right;
+  margin-top: 0.5rem;
+}
+.col-left-align {
+  text-align: left;
+  margin-top: 0.5rem;
+}
+
+.bold-colored-font {
+  color: #198754;
+  font-weight: bold;
+}
+
+.white {
+  color: #fff;
+}
+
+.pb-4 {
+  padding-bottom: 1.5rem;
+}

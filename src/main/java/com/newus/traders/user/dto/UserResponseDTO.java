@@ -1,9 +1,10 @@
-package com.newus.traders.user.controller.dto;
+package com.newus.traders.user.dto;
+
+import com.newus.traders.user.entity.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import com.newus.traders.user.entity.User;
 
 @Getter
 @AllArgsConstructor
@@ -12,8 +13,7 @@ public class UserResponseDTO {
   private String username;
   private String email;
 
-    public static UserResponseDTO of(User user) {
-
-        return new UserResponseDTO(user.getUsername(),user.getEmail());
-    }
+  public static UserResponseDTO of(User user) {
+    return new UserResponseDTO(user.getUsername(), user.getEmail());
+  }
 }

@@ -44,6 +44,7 @@ public class ChatController {
     @GetMapping(value = "/chat/roomNum/{roomNum}", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // 채팅방 번호와 관련된 채팅 메세지
                                                                                                  // 조회
     public Flux<ChatDto> findByRoomNum(@PathVariable String roomNum) {
+
         logger.info("Received GET request for roomNum: {}", roomNum);
         return chatService.getChatMessageByRoomNum(roomNum);
 
@@ -52,6 +53,11 @@ public class ChatController {
     // 채팅 저장
     @PostMapping("/chat")
     public Mono<ResponseEntity<String>> setMsg(@RequestBody ChatDto chat) {
+        System.out.println("////////////////////////");
+        System.out.println(chat.getSender());
+        System.out.println(chat.getReceiver());
+        System.out.println(chat.getRoomNum());
+        System.out.println("////////////////////////");
         if (chat.getRoomNum() == null || chat.getText() == null || chat.getSender() == null) {
             return Mono.just(ResponseEntity.badRequest().body("Invalid chat message format"));
         }

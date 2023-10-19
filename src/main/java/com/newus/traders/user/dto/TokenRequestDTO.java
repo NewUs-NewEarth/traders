@@ -1,4 +1,4 @@
-package com.newus.traders.user.controller.dto;
+package com.newus.traders.user.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

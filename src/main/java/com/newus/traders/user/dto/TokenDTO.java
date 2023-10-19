@@ -4,7 +4,7 @@
  * @modify date 2023-10-16 10:54:45
  */
 
-package com.newus.traders.user.controller.dto;
+package com.newus.traders.user.dto;
 
 import lombok.*;
 
