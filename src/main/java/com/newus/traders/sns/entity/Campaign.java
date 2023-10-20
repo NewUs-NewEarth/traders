@@ -6,16 +6,23 @@
 package com.newus.traders.sns.entity;
 
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
-import com.newus.traders.sns.type.CampaignStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.newus.traders.sns.form.CampaignForm;
+
+// import com.newus.traders.sns.type.CampaignStatus;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -40,17 +47,20 @@ public class Campaign {
     @Column(length = 1000) 
     private String verificationMethod;  // 인증 방법
 
-    @Enumerated(EnumType.STRING)
-    private CampaignStatus status;
-
     private String tags; // 태그
 
-    // @ElementCollection
-    // private List<String> images;
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private List<CampaignImage> images;
 
-    public void expireCampaign(){  //캠페인이 만료되었을 때
-        this.status = CampaignStatus.EXPIRED;
-    }
-
+    @Builder
+    public Campaign(CampaignForm campaignForm) {
+        this.dueDate = campaignForm.getDueDate();
+        this.organizer = campaignForm.getOrganizer();  
+	    this.title = campaignForm.getTitle();  
+	    this.description = campaignForm.getDescription();  
+	    this.verificationMethod = campaignForm.getVerificationMethod();  
+	    this.tags = campaignForm.getTags();  
+    } 
     
 }

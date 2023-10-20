@@ -1,3 +1,10 @@
+/**
+ * @author jeongyearim
+ * @email [example@mail.com]
+ * @create date 2023-10-20 11:17:37
+ * @modify date 2023-10-20 11:17:43
+ * @desc [description]
+ */
 import React from 'react';
 import Carousel from 'react-bootstrap/Carousel';
 import '../../assets/css/MainNews.css';

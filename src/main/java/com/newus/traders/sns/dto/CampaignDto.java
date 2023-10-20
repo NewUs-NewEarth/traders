@@ -6,6 +6,7 @@
 package com.newus.traders.sns.dto;
 
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.EnumType;
@@ -16,7 +17,9 @@ import javax.persistence.Id;
 
 import com.newus.traders.product.entity.Product;
 import com.newus.traders.sns.entity.Campaign;
-import com.newus.traders.sns.type.CampaignStatus;
+import com.newus.traders.sns.entity.CampaignImage;
+// import com.newus.traders.sns.type.CampaignStatus;
+import com.newus.traders.sns.entity.SnsImage;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -37,7 +40,7 @@ public class CampaignDto {
     private String description;  // 챌린지 의의
     private String verificationMethod;  // 인증 방법
 
-    private CampaignStatus status;
+    private List<CampaignImage> images;
     private String tags; // 태그
 
     @Builder
@@ -48,7 +51,7 @@ public class CampaignDto {
         this.title = campaign.getTitle();
         this.description = campaign.getDescription();
         this.verificationMethod = campaign.getVerificationMethod();
-        this.status = campaign.getStatus();
+        this.images = campaign.getImages();
         this.tags = campaign.getTags();
         
     }

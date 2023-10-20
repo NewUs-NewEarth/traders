@@ -14,4 +14,5 @@ public class NewsDto {
     private String imageUrl;
     private String articleTitle;
     private String summaryTitle;
+    private String articleLink;
 }

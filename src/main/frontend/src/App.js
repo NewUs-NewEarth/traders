@@ -34,6 +34,10 @@ import MainFooter from "./components/layout/MainFooter";
 import ResizedComponent from "./components/layout/ResizedComponent";
 import NavBar from "./components/layout/NavBar";
 import MainView from "./components/layout/MainView";
+import { Alert } from "antd";
+import Alerts from "./views/IndexSections/Alerts";
+import SnsRegistration from "./components/sns/SnsRegistration";
+import jwt_decode from "jwt-decode";
 
 const theme = createTheme({
   typography: {
@@ -41,7 +45,13 @@ const theme = createTheme({
   }
 });
 
+
+
 function App() {
+  
+  const userInfo = jwt_decode(localStorage.getItem("ACCESS_TOKEN"));
+  window.user =  userInfo.sub;
+
   return (
     <>
       <ResizedComponent>
@@ -82,13 +92,12 @@ function App() {
           </li>
           <br />
 
-        
-          <li>
-            <Link to="/chat">chat</Link>
-          </li>
+        <li>
+          <Link to="/chat">chat</Link>
+        </li>
 
-            <button onClick={signout}>로그아웃</button>
-            <hr />
+        <button onClick={signout}>로그아웃</button>
+        <hr />
 
           <li>
             <Link to="/news">News</Link>
@@ -96,9 +105,7 @@ function App() {
           <li>
             <Link to="/campaign">Campaign</Link>
           </li>
-          <li>
-            <Link to="/sns">sns</Link>
-          </li>
+          
         </ul>
           
     
@@ -152,24 +159,23 @@ function App() {
           <Route path="/campaign" exact>
             <CampaignList />
           </Route>
-          <Route path="/campaign/:id" exact>
-            <CampaignDatails />
-          </Route>
+          
+        <Route path="/sns/snsRegistration" exact>
+          <SnsRegistration/>
+        </Route>
 
-          <Route path="/sns" exact></Route>
-        </Switch>
-        
-      
+      </Switch>
     
-        </div>
+      </div>
 
+     
         <ChatList/>
         <MainFooter/>
    
         
       </ThemeProvider>
       </ResizedComponent>
-</>
+    </>
   );
 }
 
