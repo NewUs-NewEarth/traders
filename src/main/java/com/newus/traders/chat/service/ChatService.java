@@ -40,9 +40,9 @@ public class ChatService {
     }
 
     // 채팅방 목록 조회
-    public Flux<String> getChatRoomListBySender(String sender) {
+    public Flux<String> getChatRoomListByUser(String username ) {
 
-        return chatRepository.findBySenderOrReceiver(sender, sender)
+        return chatRepository.findBySenderOrReceiver(username, username)
                 .map(ChatDto::getRoomNum)
                 .distinct();
     }

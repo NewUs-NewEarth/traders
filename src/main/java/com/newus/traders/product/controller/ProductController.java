@@ -37,10 +37,11 @@ public class ProductController {
     private final ProductService productService;
     private final TokenProvider tokenProvider;
 
-    public UserDetails getUserDetails(String accessToken) {
+    public String getUserDetails(String accessToken) {
         Authentication authentication = tokenProvider.getAuthentication(accessToken);
         Object principal = authentication.getPrincipal();
-        return (UserDetails) principal;
+        UserDetails userDetails = (UserDetails) principal;
+        return userDetails.getUsername();
     }
 
     @GetMapping("/products")
@@ -98,38 +99,11 @@ public class ProductController {
      * @desc [프론트단에서 받아온 위도,경도를 확인하고 3km 반경의 랜덤 생성 데이터를 db에 넣는다.]
      */
 
-    /////////////////////
     @GetMapping("/products/nearestProducts")
     public ResponseEntity<List<ProductDto>> getNearestProducts(@RequestParam("latitude") double latitude,
             @RequestParam("longitude") double longitude) {
 
-        // System.out.println("받은 위도: " + latitude);
-        // System.out.println("받은 경도: " + longitude);
-
         return ResponseEntity.ok(productService.getNearestProducts(latitude, longitude));
     }
-
-    /*
-     * @PostMapping("/products/nearestProducts")
-     * public ResponseEntity<List<Product>> receiveCoordinates(@RequestBody
-     * Coordinates coordinates) {
-     * double latitude = coordinates.getLatitude();
-     * double longitude = coordinates.getLongitude();
-     * 
-     * // 여기에서 위도와 경도 데이터를 활용하여 원하는 작업을 수행합니다.
-     * System.out.println("받은 위도: " + latitude);
-     * System.out.println("받은 경도: " + longitude);
-     * 
-     * //3km 반경의 10개 무작위 상품 데이터 생성
-     * //productService.generateRandomProducts(35.438663933103975,
-     * 128.82745361768966, 10, 10);
-     * 
-     * //3km 반경의 상품들을 오라클 db에서 가져온다.
-     * List<Product> products = productService.findProductsWithin3Km(latitude,
-     * longitude);
-     * 
-     * return ResponseEntity.ok(products);
-     * }
-     */
 
 }

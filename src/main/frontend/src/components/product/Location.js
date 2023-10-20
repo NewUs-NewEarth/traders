@@ -1,14 +1,13 @@
 /**
  * @author jeongyearim
- * @email [example@mail.com]
  * @create date 2023-09-26 10:33:01
- * @modify date 2023-10-17 11:37:16
+ * @modify date 2023-10-20 15:51:04
  * @desc [상품 리스트 페이지에서 근처 상품 보기 버튼을 클릭하면 지도 모달 페이지가 뜨게 한다.]
  */
 import { useEffect, useState } from "react";
 import { Map, MapMarker } from "react-kakao-maps-sdk";
 
-const ModalPage = ({ lat, lng }) => {
+const Location = ({ lat, lng }) => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -40,4 +39,4 @@ const ModalPage = ({ lat, lng }) => {
   );
 };
 
-export default ModalPage;
+export default Location;

@@ -1,10 +1,15 @@
 /**
  * @author hyunseul
  * @create date 2023-10-11 19:03:18
- * @modify date 2023-10-19 01:03:56
+ * @modify date 2023-10-20 16:08:53
+ */
+/**
+ * @author wheesunglee
+ * @create date 2023-10-19 10:08:23
+ * @modify date 2023-10-20 16:08:26
+ * @desc 백엔드 연결
  */
 
-import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useEffect, useState } from "react";
 import Col from "react-bootstrap/Col";
@@ -12,71 +17,54 @@ import Modal from "react-bootstrap/Modal";
 import Row from "react-bootstrap/Row";
 import { BsChatDots } from "react-icons/bs";
 import { IoCloseSharp } from "react-icons/io5";
-import { useHistory, withRouter } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import "../../assets/css/ChatListModal.css";
 import "../../assets/css/ChatStyle.css";
 import Chatprofile from "../../assets/img/Chatprofile.png";
-import { fetchLastMessages } from "./fetchLastMessages ";
+import TokenRefresher from "../service/TokenRefresher";
+import { fetchLastMessages } from "./fetchLastMessages";
 
-const ChatList = (props) => {
-  // const { location } = props;
-  // const username = location.state;
-  // console.log(username.enteredUsername)
-  // const [username,setUsername] = useState('');
-
-  // const location = useLocation();
-  // // const username =;
-  // const [chatRooms, setChatRooms] = useState([]);
-  // const history = useHistory();
-  // const [dataLoaded, setDataLoaded] =useState(false);
-  // const [lastMsg,setLastMsg] = useState([]);
-
+const ChatList = () => {
+  const user = window.user;
   const [chatRooms, setChatRooms] = useState([]);
   const history = useHistory();
   const [dataLoaded, setDataLoaded] = useState(false);
   const [lastMsg, setLastMsg] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  ///////////////////////////////
-  const username = "배수지";
-  ////////////////////////////////
-
   const openModalHandler = () => {
     setIsOpen(!isOpen);
   };
 
   useEffect(() => {
-    if (username) {
+    if (user) {
       fetchData().then(() => {
         setDataLoaded(true);
       });
     } else {
       history.push("/");
     }
-  }, [username, history]);
+  }, []);
 
   const fetchData = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/api/chat/list", {
-        params: {
-          sender: username,
-        },
-      });
+      const response = await TokenRefresher.get(
+        "http://localhost:8080/api/chat/list"
+      );
 
       const chatData = response.data || [];
       setChatRooms(chatData);
 
       console.log("채팅방 요청 성공", chatData);
 
-      if (chatData.length > 0) {
-        fetchLastMessageForChatRooms(chatData);
+      if (chatData.length < 0) {
+        console.log("채팅방 목록이 비어있습니다.");
       }
+      fetchLastMessageForChatRooms(chatData);
     } catch (error) {
       console.error("채팅방 목록을 불러오는 데 실패했습니다.", error);
     }
   };
-
-  // const chatRoomslastMsg = chatRooms.splice(-1)[1].split()
 
   // 마지막 메세지 가져와서 리스트 업데이트
   const fetchLastMessageForChatRooms = async (chatRooms) => {
@@ -85,7 +73,7 @@ const ChatList = (props) => {
       return;
     }
 
-    console.log("채팅방 목록: 111111111111111", chatRooms);
+    console.log("채팅방 목록: ", chatRooms);
     const chatLastMessages = await Promise.all(
       chatRooms.map(async (roomNum) => {
         try {
@@ -101,10 +89,14 @@ const ChatList = (props) => {
     );
     setLastMsg(chatLastMessages);
   };
-  console.log(chatRooms[0]);
 
   const closeBtn = () => {
     setIsOpen(!isOpen);
+  };
+
+  const moveToChatBox = (roomNum) => {
+    setIsOpen(!isOpen);
+    history.push(`/chat/roomNum/${roomNum}`);
   };
 
   return (
@@ -130,40 +122,42 @@ const ChatList = (props) => {
           </Modal.Title>
         </Modal.Header>
 
-        {username && dataLoaded && chatRooms.length > 0 && (
+        {user && dataLoaded && chatRooms.length > 0 && (
           <Modal.Body>
-            {lastMsg.map((chatRoom) => (
-              <Row key={chatRoom.roomNum} className="mb-3 Row">
-                <Col xs={3} style={{ width: "20%" }}>
-                  <img
-                    src={Chatprofile}
-                    alt="프로필 이미지"
-                    className="list-content-img"
-                  />
-                </Col>
-                <Col xs={9} className="list-content-msg">
-                  <Row>
-                    <Col
-                      className="list-receiver"
-                      onClick={() =>
-                        history.push(`/chat/roomNum/${chatRoom.roomNum}`)
-                      }
-                    >
-                      {chatRoom.lastMessage.receiver
-                        ? chatRoom.lastMessage.receiver
-                        : "사용자가 없습니다."}
-                    </Col>
-                  </Row>
-                  <Row>
-                    <Col>
-                      {chatRoom.lastMessage.lastMessage
-                        ? chatRoom.lastMessage.lastMessage
-                        : "메시지가 없습니다."}
-                    </Col>
-                  </Row>
-                </Col>
-              </Row>
-            ))}
+            {lastMsg.map((chatRoom) => {
+              const receiver =
+                user !== chatRoom.lastMessage.sender
+                  ? chatRoom.lastMessage.sender
+                  : chatRoom.lastMessage.receiver;
+              console.log("대화상대", receiver);
+              return (
+                <Row key={chatRoom.roomNum} className="mb-3 Row">
+                  <Col xs={3} style={{ width: "20%" }}>
+                    <img
+                      src={Chatprofile}
+                      alt="프로필 이미지"
+                      className="list-content-img"
+                    />
+                  </Col>
+                  <Col xs={9} className="list-content-msg">
+                    <Row>
+                      <Col
+                        className="list-receiver"
+                        onClick={() => {
+                          history.push(`/chat/roomNum/${chatRoom.roomNum}`);
+                          openModalHandler(!isOpen);
+                        }}
+                      >
+                        {receiver}
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col>{chatRoom.lastMessage.lastMessage}</Col>
+                    </Row>
+                  </Col>
+                </Row>
+              );
+            })}
           </Modal.Body>
         )}
       </Modal>
@@ -171,4 +165,4 @@ const ChatList = (props) => {
   );
 };
 
-export default withRouter(ChatList);
+export default ChatList;

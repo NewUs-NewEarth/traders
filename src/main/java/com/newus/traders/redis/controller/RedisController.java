@@ -3,70 +3,77 @@
 //  * @create date 2023-10-04 16:10:23
 //  * @modify date 2023-10-04 16:10:23
 //  */
-// package com.newus.traders.redis.controller;
+package com.newus.traders.redis.controller;
 
-// import java.time.LocalDate;
+import java.time.LocalDate;
 
-// import org.springframework.web.bind.annotation.GetMapping;
-// import org.springframework.web.bind.annotation.PathVariable;
-// import org.springframework.web.bind.annotation.PostMapping;
-// import org.springframework.web.bind.annotation.PutMapping;
-// import org.springframework.web.bind.annotation.RequestMapping;
-// import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-// import com.newus.traders.redis.service.RedisService;
+import com.newus.traders.redis.service.RedisService;
+import com.newus.traders.user.jwt.TokenProvider;
 
-// import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-// @RestController
-// @RequiredArgsConstructor
-// @RequestMapping("/api")
-// public class RedisController {
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api")
+public class RedisController {
 
-//     private final RedisService redisService;
+    private final RedisService redisService;
+    private final TokenProvider tokenProvider;
 
-//     @GetMapping("/redis/attendance")
-//     public boolean checkAttendance() {
+    public String getUserDetails(String accessToken) {
+        Authentication authentication = tokenProvider.getAuthentication(accessToken);
+        Object principal = authentication.getPrincipal();
+        UserDetails userDetails = (UserDetails) principal;
+        return userDetails.getUsername();
+    }
 
-//         return redisService.checkAttendance(LocalDate.now(), 3L);
-//     }
+    @GetMapping("/redis/attendance")
+    public boolean checkAttendance(@RequestHeader("token") String accessToken) {
 
-//     @PostMapping("/redis/attendance")
-//     public void updateAttendance() {
+        return redisService.checkAttendance(LocalDate.now(), getUserDetails(accessToken));
+    }
 
-//         redisService.updateAttendance(LocalDate.now(), 3L);
-//     }
+    @PostMapping("/redis/attendance")
+    public void updateAttendance(@RequestHeader("token") String accessToken) {
 
-//     @GetMapping("/redis/likes")
-//     public void getLikes() {
+        redisService.updateAttendance(LocalDate.now(), getUserDetails(accessToken));
+    }
 
-//         redisService.addLikes(1L, 1L);
-//         redisService.addLikes(1L, 2L);
-//         redisService.addLikes(1L, 3L);
-//         // System.out.println(redisService.checkIfLiked(1L, 3L));
-//         // System.out.println(redisService.checkIfLiked(1L, 2L));
-//         // System.out.println(redisService.countLikes(1L));
-//         // redisService.removeLikes(1L, 2L);
+    @GetMapping("/redis/likes")
+    public void getLikes() {
 
-//         Long counts = (Long) redisService.countLikes(1L);
-//         System.out.println(counts);
-//         redisService.updateLikesInDB();
-//     }
+        Long counts = (Long) redisService.countLikes(1L);
+        redisService.updateLikesInDB();
+        ///////////
+    }
 
-//     @PutMapping("/redis/changeLikes/{id}")
-//     public void changeLikes(@PathVariable("id") Long id) {
-//         System.out.println("사용자 1L: " + redisService.checkIfLiked(id, 1L));
+    @GetMapping("/redis/checkLiked/{id}")
+    public boolean checkIfLiked(@RequestHeader("token") String accessToken, @PathVariable("id") Long productId) {
+        System.out.println("좋아요????????" + redisService.checkIfLiked(productId, getUserDetails(accessToken)));
+        ;
+        return redisService.checkIfLiked(productId, getUserDetails(accessToken));
+    }
 
-//         if (redisService.checkIfLiked(id, 1L)) {
+    @PutMapping("/redis/changeLikes/{id}")
+    public void changeLikes(@RequestHeader("token") String accessToken, @PathVariable("id") Long productId) {
 
-//             redisService.removeLikes(id, 1L);
-//             System.out.println("좋아요 취소");
-//         } else {
-//             redisService.addLikes(id, 1L);
-//             System.out.println("좋아요");
+        if (redisService.checkIfLiked(productId, getUserDetails(accessToken))) {
 
-//         }
-//         // redisService.updateLikesInDB();
-//     }
+            redisService.removeLikes(productId, getUserDetails(accessToken));
+        } else {
+            redisService.addLikes(productId, getUserDetails(accessToken));
 
-// }
+        }
+    }
+
+}

@@ -3,6 +3,12 @@
  * @create date 2023-09-26 17:02:48
  * @modify date 2023-09-26 17:02:48
  */
+/**
+ * @author wheesunglee
+ * @create date 2023-10-19 10:08:23
+ * @modify date 2023-10-20 16:08:26
+ * 프런트 연결
+ */
 package com.newus.traders.chat.controller;
 
 import java.time.LocalDateTime;
@@ -14,17 +20,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.newus.traders.chat.dto.ChatDto;
 import com.newus.traders.chat.service.ChatService;
+import com.newus.traders.user.jwt.TokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -39,7 +48,15 @@ import reactor.core.publisher.Mono;
 public class ChatController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
-    private final ChatService chatService; // 채팅 메세지 저장, 검색
+    private final ChatService chatService;
+    private final TokenProvider tokenProvider;
+
+    public String getUserDetails(String accessToken) {
+        Authentication authentication = tokenProvider.getAuthentication(accessToken);
+        Object principal = authentication.getPrincipal();
+        UserDetails userDetails = (UserDetails) principal;
+        return userDetails.getUsername();
+    }
 
     @GetMapping(value = "/chat/roomNum/{roomNum}", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // 채팅방 번호와 관련된 채팅 메세지
                                                                                                  // 조회
@@ -50,7 +67,6 @@ public class ChatController {
 
     }
 
-    // 채팅 저장
     @PostMapping("/chat")
     public Mono<ResponseEntity<String>> setMsg(@RequestBody ChatDto chat) {
         System.out.println("////////////////////////");
@@ -89,22 +105,15 @@ public class ChatController {
                         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to save chat message"));
     }
 
-    // @GetMapping(value = "/chat/list") // 채팅방 목록조회
-    // public Flux<String> getChatRoomListsBySender(@RequestParam("sender") String
-    // sender) {
-    // return chatService.getChatRoomListBySender(sender);
-    // }
-
     @GetMapping(value = "/chat/list") // 채팅방 목록조회
-    public ResponseEntity<List<String>> getChatRoomListsBySender(@RequestParam("sender") String sender) {
-        Flux<String> chatRoomFlux = chatService.getChatRoomListBySender(sender);
+    public ResponseEntity<List<String>> getChatRoomListsBySender(@RequestHeader("token") String accessToken) {
+        String username = getUserDetails(accessToken);
+
+        Flux<String> chatRoomFlux = chatService.getChatRoomListByUser(username);
         List<String> chatRoomList = chatRoomFlux.collectList().block(); // Flux를 List로 변환
 
-        if (chatRoomList != null) {
-            return ResponseEntity.ok(chatRoomList);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return ResponseEntity.ok(chatRoomList);
+
     }
 
 }

@@ -10,7 +10,6 @@ const ProductListHeader = () => {
   const [latitude, setLatitude] = useState();
   const [longitude, setLongitude] = useState();
   const [showAvailable, setShowAvailable] = useState(false);
-  const { kakao } = window;
   const [viewNearby, setViewNearby] = useState(false);
   const history = useHistory();
 
@@ -25,10 +24,10 @@ const ProductListHeader = () => {
         if (error.response) {
           const errorResponse = error.response.data;
           console.log(errorResponse);
-          console.log("getAllProducts");
         }
       });
   };
+
   const getLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -62,7 +61,6 @@ const ProductListHeader = () => {
       if (error.response) {
         const errorResponse = error.response.data;
         console.log(errorResponse);
-        console.log("sendCoordinatesToServer");
       }
     }
   };
@@ -81,9 +79,7 @@ const ProductListHeader = () => {
   useEffect(() => {
     getLocation();
     getAllProducts();
-    console.log("useEffect");
   }, []);
-  console.log(history.location.key);
 
   return (
     <>

@@ -1,25 +1,35 @@
 /**
  * @author hyunseul
  * @create date 2023-10-04 13:02:02
- * @modify date 2023-10-19 01:28:47
+ * @modify date 2023-10-20 13:51:58
  */
 
-import axios from "axios";
+/**
+ * @author wheesunglee
+ * @create date 2023-10-19 23:22:49
+ * @modify date 2023-10-19 23:22:56
+ */
+
 import "bootstrap/dist/css/bootstrap.min.css";
+import jwt_decode from "jwt-decode";
 import React, { useEffect, useRef, useState } from "react";
 import Container from "react-bootstrap/Container";
 import { AiOutlineCalendar } from "react-icons/ai";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { PiCreditCard } from "react-icons/pi";
 import Clock from "react-live-clock";
-import { useHistory } from "react-router-dom/cjs/react-router-dom";
+import { withRouter } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom/cjs/react-router-dom";
 import "../../assets/css/ChatStyle.css";
 import Chatprofile from "../../assets/img/Chatprofile.png";
+import TokenRefresher from "../service/TokenRefresher";
 import ChatScheduleModal from "./ChatScheduleModal";
 
 // 채팅 내용
 const ChatBox = (props) => {
-  const [roomNum, setRoomNum] = useState();
+  const [receiver, setReceiver] = useState();
+  const [productId, setProductId] = useState();
+  const [product, setProduct] = useState();
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const eventSourceRef = useRef(null);
@@ -31,15 +41,38 @@ const ChatBox = (props) => {
   const [savedData, setSavedData] = useState(null);
   const [showSavedData, setShowSavedData] = useState(false);
 
-  ////////////////////////////////////////////////////////////
-  const [username, setUsername] = useState("유인나");
-  const [seller, setSeller] = useState("");
+  ////////////////////////////////////////
+  const roomNum = useParams().roomNum;
+  console.log("chatBox-roomNum", roomNum);
+  const sender = window.user;
+  console.log("sender", sender);
 
-  console.log("username", username);
-  console.log("roomNum", roomNum);
-  console.log("seller", seller);
+  function setInfo(roomNum, sender) {
+    const data = jwt_decode(roomNum);
 
-  ////////////////////////////////////////////////////////////
+    setProductId(data.productId);
+    const seller = data.seller;
+    console.log("seller", seller);
+    const buyer = data.buyer;
+    console.log("buyer", buyer);
+
+    if (sender == seller) {
+      console.log("셀러가 로그인중?");
+      setReceiver(buyer);
+    } else {
+      console.log("바이어가 로그인중?");
+      setReceiver(seller);
+    }
+  }
+
+  console.log("receiver", receiver);
+
+  useEffect(() => {
+    setInfo(roomNum);
+    fetchData();
+  }, []);
+
+  ///////////////////////////////////////
 
   const toggleModal = () => {
     setModalVisible((prevModalVisible) => !prevModalVisible);
@@ -47,7 +80,7 @@ const ChatBox = (props) => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get(
+      const response = await TokenRefresher.get(
         `http://localhost:8080/api/chat/roomNum/${roomNum}`
       );
       const chatData = response.data || [];
@@ -63,21 +96,7 @@ const ChatBox = (props) => {
     }
   };
 
-  const scrollToBottom = () => {
-    messageRef.current.scrollTop = messageRef.current.scrollHeight;
-  };
-
-  useEffect(() => {
-    const { location } = props.location;
-    if (location) {
-      const product = location.state;
-      console.log(product.seller);
-      setRoomNum(product.id + product.seller + username);
-    }
-    setSeller("배수지");
-    fetchData();
-  }, []);
-
+  // EventSource 초기화 및 메시지 받아오기
   useEffect(() => {
     eventSourceRef.current = new EventSource(
       `http://localhost:8080/api/chat/roomNum/${roomNum}`
@@ -97,13 +116,19 @@ const ChatBox = (props) => {
     };
   }, [messages]); // messages가 변경될 때마다 useEffect가 호출됨
 
+  const scrollToBottom = () => {
+    messageRef.current.scrollTop = messageRef.current.scrollHeight;
+  };
+
   // 서버에 메세지 보내기
   const sendMessageToServer = async (message) => {
+    console.log(sender);
+    console.log(receiver);
     if (typeof message === "string" && message.trim() !== "") {
       const chat = {
         text: message,
-        sender: username,
-        // receiver:username,
+        sender: sender,
+        receiver: receiver,
         roomNum: roomNum,
       };
       try {
@@ -114,10 +139,13 @@ const ChatBox = (props) => {
           });
           setShowSavedData(true);
           // 예약 데이터 전송
-          await axios.post("http://localhost:8080/api/chat/save", reservedData);
+          await TokenRefresher.post(
+            "http://localhost:8080/api/chat/save",
+            reservedData
+          );
         }
 
-        await axios.post("http://localhost:8080/api/chat", chat);
+        await TokenRefresher.post("http://localhost:8080/api/chat", chat);
         console.log("메시지 전송 완료 " + chat);
         setMessage("");
         scrollToBottom();
@@ -134,8 +162,8 @@ const ChatBox = (props) => {
     // 예약 정보 메시지를 서버에 전송
     const notice = {
       text: "일정잡힘",
-      sender: username,
-      // receiver: username,
+      sender: sender,
+      receiver: receiver,
       roomNum: roomNum,
       date: data.date,
       location: data.location,
@@ -143,7 +171,7 @@ const ChatBox = (props) => {
 
     try {
       // 메시지 전송
-      await axios.post("http://localhost:8080/api/chat/save", notice);
+      await TokenRefresher.post("http://localhost:8080/api/chat/save", notice);
       console.log("모달 메시지 전송 완료:", notice);
 
       // 데이터 상태 변수 업데이트 (date와 location만 저장)
@@ -195,11 +223,6 @@ const ChatBox = (props) => {
   };
 
   const saveData = (data) => {
-    //qkrtlconsole.log(sender)
-
-    // if (showSavedData && savedData && savedData.date === data.date
-    //   && savedData.location === data.location) {
-    //     console.log("예약 메세지 출력하는 곳")
     return (
       <div>
         <div className="notice-box">
@@ -216,8 +239,6 @@ const ChatBox = (props) => {
       </div>
     );
   };
-  //return null;
-  //
 
   // 예약 정보가 있는 경우에만 추가하도록 변경
   useEffect(() => {
@@ -243,7 +264,6 @@ const ChatBox = (props) => {
     }
   };
 
-  // 뒤로가기 버튼 클릭 이벤트 함수
   const handleBackButtonClick = () => {
     history.push("/chat/list");
   };
@@ -268,12 +288,12 @@ const ChatBox = (props) => {
                   size="20px"
                   onClick={handleBackButtonClick}
                 />
-                　
+
                 <img
                   src={Chatprofile}
                   className="profile_img"
                   alt="상품 이미지"
-                  value={username}
+                  value={receiver}
                 />
                 <AiOutlineCalendar
                   className="icon-calendar"
@@ -309,9 +329,9 @@ const ChatBox = (props) => {
 
                 if (data.text === "일정잡힘") {
                   return <div key={index}>{saveData(data)}</div>;
-                } else if (data.sender === username && !data.date) {
+                } else if (data.sender === sender && !data.date) {
                   return <div key={index}>{getSendMsgBox(data)}</div>;
-                } else if (data.sender !== username && !data.date) {
+                } else if (data.sender !== sender && !data.date) {
                   return <div key={index}>{getReceiveMsgBox(data)}</div>;
                 }
                 return null;
@@ -349,4 +369,4 @@ const ChatBox = (props) => {
   );
 };
 
-export default ChatBox;
+export default withRouter(ChatBox);

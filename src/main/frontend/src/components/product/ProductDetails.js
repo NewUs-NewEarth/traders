@@ -1,15 +1,18 @@
 /**
  * @author wheesunglee
  * @create date 2023-09-20 10:21:07
- * @modify date 2023-10-19 01:29:52
+ * @modify date 2023-10-20 20:06:21
  */
-import axios from "axios";
+import jwt_encode from "jwt-encode";
 import React, { useEffect, useState } from "react";
 import { Col, Container, Row, Stack } from "react-bootstrap";
-import { useHistory, useParams } from "react-router-dom/";
+import { useHistory } from "react-router-dom/";
+import { useParams } from "react-router-dom/cjs/react-router-dom.min";
 import "../../assets/css/Product.css";
+import { fetchProduct } from "../../assets/js/product";
+import TokenRefresher from "../service/TokenRefresher";
 import ImageView from "./ImageView";
-import ModalPage from "./ModalPage";
+import Location from "./Location";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -18,27 +21,44 @@ const ProductDetails = () => {
   const [liked, setLiked] = useState();
   const [imageList, setImageList] = useState([]);
   const [mainImage, setMainImage] = useState({});
-  const seller = "배수지";
-  // const user = "배수지";
-  const user = "유인나";
+
+  ////////////////////////////////////////
+  const key = process.env.REACT_APP_JWT_KEY;
+  const user = window.user;
+  ///////////////////////////////////////
+
+  function generateRoomNum(id, seller, user) {
+    const data = {
+      productId: id,
+      seller: seller,
+      buyer: user,
+    };
+    const roomNum = jwt_encode(data, key);
+    console.log(roomNum);
+    return roomNum;
+  }
+
+  const moveToChat = () => {
+    const roomNum = generateRoomNum(id, seller, user);
+    history.push({
+      pathname: `../chat/roomNum/${roomNum}`,
+      state: data,
+    });
+  };
 
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/products/${id}`)
-      .then((res) => {
-        setData(res.data);
-        setImageList(res.data.images);
-        setLiked(res.data.liked);
-      })
-      .catch((error) => {
-        if (error.response) {
-          const errorResponse = error.response.data;
-          console.log(errorResponse);
-        }
-      });
+    fetchProduct(id).then((response) => {
+      setData(response.data);
+      setImageList(response.data.images);
+    });
+
+    // fetchLiked(id).then((response) => {
+    //   setLiked(response.data);
+    // });
   }, [liked]);
 
   const {
+    seller,
     name,
     price,
     description,
@@ -52,13 +72,14 @@ const ProductDetails = () => {
 
   const changeLiked = (id) => {
     setLiked(!liked);
-    axios.put(`/api/redis/changeLikes/${id}`).catch((error) => {
+    TokenRefresher.put(`/api/redis/changeLikes/${id}`).catch((error) => {
       if (error.response) {
         const errorResponse = error.response.data;
         console.log(errorResponse);
       }
     });
   };
+
   return (
     <>
       <Container style={{ maxWidth: "1040px", backgroundColor: "#fe4568" }}>
@@ -94,7 +115,7 @@ const ProductDetails = () => {
               }}
             />
             <Row>
-              <Col md="2">{likes}</Col>
+              <Col md="2">좋아요하트{likes}</Col>
               <Col md="10">
                 <div className="text-right">등록일시: {createdAt}</div>
               </Col>
@@ -115,12 +136,7 @@ const ProductDetails = () => {
                       className="btn-1 bold"
                       color="default"
                       type="button"
-                      onClick={() =>
-                        history.push({
-                          path: "../chat/room",
-                          state: data,
-                        })
-                      }
+                      onClick={() => moveToChat()}
                     >
                       채팅하기
                     </button>
@@ -143,7 +159,7 @@ const ProductDetails = () => {
             <div className="text-center ">
               <h3>거래희망장소</h3>
               <div className="justify-content-center">
-                <ModalPage lat={latitude} lng={longitude} />
+                <Location latitude={latitude} longitude={longitude} />
               </div>
             </div>
           </Col>

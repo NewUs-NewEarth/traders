@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +26,7 @@ import com.newus.traders.product.form.ProductForm;
 import com.newus.traders.product.repository.ImageRepository;
 import com.newus.traders.product.repository.ProductRepository;
 import com.newus.traders.product.type.ProductStatus;
+import com.newus.traders.redis.service.RedisService;
 import com.newus.traders.user.entity.User;
 import com.newus.traders.user.repository.UserRepository;
 
@@ -39,14 +39,18 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
-    // private final RedisService redisService;
+    private final RedisService redisService;
+
+    public User getUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
 
     public List<ProductDto> getAllProducts() {
 
         List<Product> productList = productRepository.findAll();
 
         if (productList.size() == 0) {
-            // 리스트가 0일 경우에 --- 메세지를 좀 수정할 필요는 보임!
             throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
         }
 
@@ -55,15 +59,14 @@ public class ProductService {
 
             ProductDto productDto = new ProductDto(product);
 
-            // productDto.setLiked(redisService.checkIfLiked(product.getId(), 1L));
+            // productDto.setLiked(redisService.checkIfLiked(product.getId(),
+            // user.getUserId));
 
-            // Object objectCount = redisService.countLikes(product.getId());
+            //Object objectCount = redisService.countLikes(product.getId());
 
-            // if (objectCount != null) {
-            // productDto.setLikes((Long) objectCount);
-            // }
-
-            // 임시로!!!!!!!!!!!!!!!!!!
+            ////if (objectCount != null) {
+                //productDto.setLikes((Long) objectCount);
+            //}
 
             productDtoList.add(productDto);
         }
@@ -78,17 +81,14 @@ public class ProductService {
 
         ProductDto productDto = new ProductDto(product);
 
-        // System.out.println("좋아요?" + redisService.checkIfLiked(product.getId(), 1L));
-        // System.out.println(productDto.isLiked());
+        // productDto.setLiked(redisService.checkIfLiked(product.getId(),
+        // user.getUserId()));
 
-        // productDto.setLiked(redisService.checkIfLiked(product.getId(), 1L));
-        // System.out.println(productDto.isLiked());
+        //Object objectCount = redisService.countLikes(product.getId());
 
-        // Object objectCount = redisService.countLikes(product.getId());
-
-        // if (objectCount != null) {
-        // productDto.setLikes((Long) objectCount);
-        // }
+        //if (objectCount != null) {
+          //  productDto.setLikes((Long) objectCount);
+        //}
         return productDto;
     }
 
@@ -144,10 +144,9 @@ public class ProductService {
     }
 
     @Transactional
-    public String registerProduct(UserDetails userDetails, ProductForm productForm, List<MultipartFile> files) {
+    public String registerProduct(String username, ProductForm productForm, List<MultipartFile> files) {
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = getUser(username);
 
         Product product = new Product(user, productForm);
 
@@ -166,11 +165,10 @@ public class ProductService {
     }
 
     @Transactional
-    public String updateProduct(UserDetails userDetails, Long productId, ProductForm productForm,
+    public String updateProduct(String username, Long productId, ProductForm productForm,
             List<MultipartFile> newFiles, List<Integer> removedFiles) {
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = getUser(username);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -204,9 +202,9 @@ public class ProductService {
         return "물품 수정을 완료하였습니다.";
     }
 
-    public String deleteProduct(UserDetails userDetails, Long productId) {
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public String deleteProduct(String username, Long productId) {
+
+        User user = getUser(username);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -255,7 +253,6 @@ public class ProductService {
      * @desc [주어진 중심 위도와 경도를 기준으로 3km 반경 내의 상품 리스트를 뽑아옵니다.]
      */
     public List<ProductDto> getNearestProducts(double latitude, double longitude) {
-
         // 3km 반경
         double distance = 3.0;
 
@@ -268,8 +265,19 @@ public class ProductService {
         List<ProductDto> nearestProductDtoList = new ArrayList<>();
 
         for (Product product : nearestProductList) {
-            // System.out.println(product.getName());
-            nearestProductDtoList.add(new ProductDto(product));
+
+            ProductDto productDto = new ProductDto(product);
+
+            // productDto.setLiked(redisService.checkIfLiked(product.getId(),
+            // user.getUserId));
+
+            Object objectCount = redisService.countLikes(product.getId());
+
+            if (objectCount != null) {
+                productDto.setLikes((Long) objectCount);
+            }
+
+            nearestProductDtoList.add(productDto);
         }
 
         return nearestProductDtoList;

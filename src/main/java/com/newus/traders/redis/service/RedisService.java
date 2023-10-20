@@ -1,119 +1,132 @@
-// /**
-//  * @author wheesunglee
-//  * @create date 2023-10-04 16:10:26
-//  * @modify date 2023-10-11 15:31:55
-//  */
-// package com.newus.traders.redis.service;
+/**
+ * @author wheesunglee
+ * @create date 2023-10-04 16:10:26
+ * @modify date 2023-10-11 15:31:55
+ */
+package com.newus.traders.redis.service;
 
-// import java.time.LocalDate;
-// import java.util.Iterator;
-// import java.util.Set;
+import java.time.LocalDate;
+import java.util.Iterator;
+import java.util.Set;
 
-// import org.springframework.data.redis.core.RedisTemplate;
-// import org.springframework.data.redis.core.ValueOperations;
-// import org.springframework.scheduling.annotation.Scheduled;
-// import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
-// import com.newus.traders.exception.CustomException;
-// import com.newus.traders.exception.ErrorCode;
-// import com.newus.traders.product.entity.Product;
-// import com.newus.traders.product.repository.ProductRepository;
+import com.newus.traders.exception.CustomException;
+import com.newus.traders.exception.ErrorCode;
+import com.newus.traders.product.entity.Product;
+import com.newus.traders.product.repository.ProductRepository;
+import com.newus.traders.user.entity.User;
+import com.newus.traders.user.repository.UserRepository;
 
-// import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-// @Service
-// @RequiredArgsConstructor
-// public class RedisService {
+@Service
+@RequiredArgsConstructor
+public class RedisService {
 
-//     private final RedisTemplate<String, String> redisTemplate;
-//     private final ProductRepository productRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
-//     public ValueOperations<String, String> operationsForValue() {
-//         return redisTemplate.opsForValue();
-//     }
+    public User getUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
 
-//     public void deleteKey(String key) {
-//         redisTemplate.delete(key);
-//     }
+    public ValueOperations<String, String> operationsForValue() {
+        return redisTemplate.opsForValue();
+    }
 
-//     public void addLikes(Long productId, Long userId) {
+    public void deleteKey(String key) {
+        redisTemplate.delete(key);
+    }
 
-//         String productKey = "productId:" + productId;
+    public void addLikes(Long productId, String username) {
+        User user = getUser(username);
 
-//         if (!checkIfLiked(productId, userId)) {
-//             System.out.println("아직 좋아요 안한 사람: " + userId);
-//             operationsForValue().setBit(productKey, userId, true);
-//         }
-//     }
+        String productKey = "productId:" + productId;
 
-//     public void removeLikes(Long productId, Long userId) {
+        if (!checkIfLiked(productId, username)) {
+            operationsForValue().setBit(productKey, user.getUserId(), true);
+        }
+    }
 
-//         String productKey = "productId:" + productId;
+    public void removeLikes(Long productId, String username) {
+        User user = getUser(username);
+        String productKey = "productId:" + productId;
 
-//         operationsForValue().setBit(productKey, userId, false);
-//     }
+        operationsForValue().setBit(productKey, user.getUserId(), false);
+    }
 
-//     public boolean checkIfLiked(Long productId, Long userId) {
-//         String productKey = "productId:" + productId;
+    public boolean checkIfLiked(Long productId, String username) {
+        User user = getUser(username);
 
-//         return operationsForValue().getBit(productKey, userId);
-//     }
+        String productKey = "productId:" + productId;
 
-//     public Object countLikes(Long productId) {
+        return operationsForValue().getBit(productKey, user.getUserId());
+    }
 
-//         String productKey = "productId:" + productId;
+    public Object countLikes(Long productId) {
 
-//         Object objectCount = redisTemplate.execute(connection -> {
-//             return connection.bitCount(productKey.getBytes());
-//         }, true);
-//         // return (Long) redisTemplate.execute(connection ->
+        String productKey = "productId:" + productId;
 
-//         // {
-//         // return connection.bitCount(productKey.getBytes());
-//         // }, true);
-//         return objectCount;
-//     }
+        Object objectCount = redisTemplate.execute(connection -> {
+            return connection.bitCount(productKey.getBytes());
+        }, true);
+        // return (Long) redisTemplate.execute(connection ->
 
-//     public void updateAttendance(LocalDate currentDate, Long userId) {
+        // {
+        // return connection.bitCount(productKey.getBytes());
+        // }, true);
+        return objectCount;
+    }
 
-//         String dateKey = currentDate.toString();
+    public void updateAttendance(LocalDate currentDate, String username) {
+        User user = getUser(username);
 
-//         operationsForValue().setBit(dateKey, userId, true);
-//     }
+        String dateKey = currentDate.toString();
 
-//     public boolean checkAttendance(LocalDate currentDate, Long userId) {
-//         String dateKey = currentDate.toString();
+        operationsForValue().setBit(dateKey, user.getUserId(), true);
+    }
 
-//         return operationsForValue().getBit(dateKey, userId);
-//     }
+    public boolean checkAttendance(LocalDate currentDate, String username) {
+        User user = getUser(username);
 
-//     @Scheduled(cron = "0 0 0 * * ?")
-//     public void updateLikesInDB() {
+        String dateKey = currentDate.toString();
 
-//         Set<String> productKeySet = redisTemplate.keys("productId*");
-//         Iterator<String> it = productKeySet.iterator();
-//         while (it.hasNext()) {
+        return operationsForValue().getBit(dateKey, user.getUserId());
+    }
 
-//             String productKey = it.next();
-//             Long productId = Long.parseLong(productKey.split(":")[1]);
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void updateLikesInDB() {
 
-//             if (countLikes(productId) != null) {
+        Set<String> productKeySet = redisTemplate.keys("productId*");
+        Iterator<String> it = productKeySet.iterator();
+        while (it.hasNext()) {
 
-//                 Product product = productRepository.findById(productId)
-//                         .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+            String productKey = it.next();
+            Long productId = Long.parseLong(productKey.split(":")[1]);
 
-//                 if (product == null) {
-//                     throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
-//                 }
+            if (countLikes(productId) != null) {
 
-//                 product.setLikes((Long) countLikes(productId));
+                Product product = productRepository.findById(productId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-//                 productRepository.save(product);
-//             }
+                if (product == null) {
+                    throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
+                }
 
-//         }
-//         System.out.println("views update complete");
+                product.setLikes((Long) countLikes(productId));
 
-//     }
+                productRepository.save(product);
+            }
 
-// }
+        }
+        System.out.println("views update complete");
+
+    }
+
+}
