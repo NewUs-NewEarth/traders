@@ -29,6 +29,6 @@ public class UserRequestDTO {
     }
 
     public UsernamePasswordAuthenticationToken toAuthentication() {
-        return new UsernamePasswordAuthenticationToken(password, email);
+        return new UsernamePasswordAuthenticationToken(email, password);
     }
 }

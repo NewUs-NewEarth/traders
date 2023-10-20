@@ -2,7 +2,7 @@
  * @author jeongyearim
  * @email [example@mail.com]
  * @create date 2023-10-12 11:38:02
- * @modify date 2023-10-12 11:39:27
+ * @modify date 2023-10-20 13:20:27
  * @desc [캠페인 리스트 출력]
  */
 import React, { useState, useEffect } from "react";
