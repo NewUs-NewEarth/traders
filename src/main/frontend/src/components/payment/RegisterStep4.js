@@ -1,14 +1,14 @@
 /**
  * @author ahrayi
  * @create date 2023-09-26 14:00:35
- * @modify date 2023-10-04 07:30:31
+ * @modify date 2023-10-19 16:04:01
  * 그린페이 가입 - 4. 간편비밀번호 확인(리팩필수)
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const RegisterStep4 = ({ onNext, confirmGpayPwd }) => {
-  const [password, setPassword] = useState("");
+const RegisterStep4 = ({ gpayPwd2,setGpayPwd2,confirmGpayPwd }) => {
+  const [password2, setPassword2] = useState("");
 
   // 0~9와 총 10개의 문자 배열을 랜덤하게 섞은 배열
   const [randomCharacters] = useState(
@@ -19,19 +19,19 @@ const RegisterStep4 = ({ onNext, confirmGpayPwd }) => {
   const keypadRows = chunkArray(randomCharacters, 3);
 
   const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
+    setPassword2(e.target.value);
   };
 
   const handleClearButtonClick = () => {
-    setPassword("");
+    setPassword2("");
   };
 
   const handleDeleteButtonClick = () => {
-    setPassword(password.slice(0, -1));
+    setPassword2(password2.slice(0, -1));
   };
 
   const handleKeypadButtonClick = (character) => {
-    setPassword(password + character);
+    setPassword2(password2 + character);
   };
 
   // 배열을 랜덤하게 섞는 함수
@@ -56,19 +56,27 @@ const RegisterStep4 = ({ onNext, confirmGpayPwd }) => {
     return chunkedArray;
   }
 
-  function setGpayPwd() {
-    {
-      /* payRegister에 보내고 */
+  function handleGpayPwd(password2) {
+    if (password2.length === 6) {
+      setGpayPwd2(password2);
+    } else {
+      alert("비밀번호 6자리를 입력해주세요.");
+      return;
     }
-    confirmGpayPwd('111111','111111')
   }
+  
+  useEffect(() => {
+    if (gpayPwd2) {
+      confirmGpayPwd();
+    }
+  }, [gpayPwd2]);
 
   return (
     <div>
       <h2>간편비밀번호 확인</h2>
       다시 한 번 비밀번호를 입력해주세요.
       <br />
-      <input type="text" id="gpayPwd" maxLength={6} size={6} value={password} onChange={handlePasswordChange} readOnly/>
+      <input type="password" id="gpayPwd" maxLength={6} size={6} value={password2} onChange={handlePasswordChange} readOnly/>
       <div id="keypad">
         {keypadRows.map((row, rowIndex) => (
           <div key={rowIndex}>
@@ -89,7 +97,7 @@ const RegisterStep4 = ({ onNext, confirmGpayPwd }) => {
           ←
         </button>
       </div>
-      <button onClick={setGpayPwd}>확인</button>
+      <button onClick={() => handleGpayPwd(password2)}>확인</button>
     </div>
   );
 };

@@ -28,7 +28,7 @@ public class Payment {
 
     // pk - member의 user_code와 연결?
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long clientInfo;
 
     // 사용자에게 입력받는 정보

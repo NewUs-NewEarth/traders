@@ -1,7 +1,7 @@
 /**
  * @author ahrayi
  * @create date 2023-10-13 12:56:57
- * @modify date 2023-10-17 15:32:43
+ * @modify date 2023-10-18 19:35:55
  * @desc 그린페이 계좌등록 프로세스
  */
 
@@ -30,6 +30,14 @@ const AccountRegister = () => {
     };
     const onPrev = () => {
       setStep((state) => state - 1);
+    };
+
+    const onText = (evt) => {
+      const { value, name } = evt.target;
+      setForm({
+        ...form,
+        [name]: value,
+      });
     };
 
     const postAccountInfo =()=>{
@@ -62,7 +70,7 @@ const AccountRegister = () => {
     return (
         <div>
             {step===1 && (
-                <AccountRegister1 onNext={onNext} form={form}  setForm={setForm} setRanNum={setRanNum}/>
+                <AccountRegister1 onNext={onNext} onText={onText} form={form} setRanNum={setRanNum}/>
             )}
             {step===2 && <AccountRegister2 onNext={onNext} ranNum={ranNum}/>}
             {step===3 && <AccountRegister3 postAccountInfo={postAccountInfo}/>}

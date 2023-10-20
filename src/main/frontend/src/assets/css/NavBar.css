@@ -1,0 +1,83 @@
+/**
+ * @author hyunseul
+ * @create date 2023-10-17 22:58:38
+ * @modify date 2023-10-18 10:52:30
+ */
+
+.nav{
+    height: 90px;
+    background-color: rgb(255, 246, 234) !important;
+    margin: 0px;
+    padding: 0px;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+.nav-container{
+  padding: 30px;
+
+}
+
+
+.nav-menu {
+  position: relative !important;
+  left: 120px !important;
+  margin: 0px !important;
+  font-weight: 800;
+  font-size: 13pt;
+}
+
+.nav-link{
+    margin-right: 30px !important;
+   
+}
+
+/* 드롭 메뉴 화살표 숨기기 */
+.nav-link::after {
+    display: none !important;
+
+}
+
+.nav-link.show {
+    color: rgb(15, 26, 95) !important;
+}
+/* 글씨 로고 */
+.nav-logo{
+    left: -60px;
+    position: relative;
+    margin: auto;
+    text-align: center;
+    font-weight: 900;
+    font-size: 22pt;
+    justify-items: center;
+    color: rgb(15, 26, 95);
+    
+}
+/* 지구 이미지 */
+.nav-logo-img{
+   width: 60px !important;
+   height: 60px !important;
+   margin-right: 10px;
+   margin-left: 10px;
+   text-align: center;
+   justify-items: center;
+}
+
+/* 오른쪽 메뉴(로그인) */
+.navbar-nav{
+    margin-right: 100px !important;
+    font-weight: 800;
+    font-size: 13pt;
+    
+}
+
+.navbar-nav .nav-link.active{
+    color: rgb(15, 26, 95);
+}
+
+.nav-logout-icons{
+    margin-right:5px !important;
+}

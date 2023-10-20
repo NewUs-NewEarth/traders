@@ -2,7 +2,7 @@
  * @author jeongyearim
  * @email [example@mail.com]
  * @create date 2023-10-04 13:01:44
- * @modify date 2023-10-18 16:39:29
+ * @modify date 2023-10-20 21:11:08
  * @desc [거래 장소 선택 모달(처음에는 현위치, 마커 이동해서 선택), ProcuctRegistaration의 하위 컴포넌트]
  */
 

@@ -1,7 +1,7 @@
 /**
  * @author ahrayi
  * @create date 2023-09-25 18:43:06
- * @modify date 2023-10-13 13:07:20
+ * @modify date 2023-10-19 16:04:19
  * 그린페이 가입 프로세스
  */
 
@@ -11,6 +11,8 @@ import RegisterStep2 from "./RegisterStep2";
 import RegisterStep3 from "./RegisterStep3";
 import RegisterStep4 from "./RegisterStep4";
 import RegisterComplete from "./RegisterComplete";
+import LoadingModal from "./LoadingModal";
+import axios from "axios";
 
 const PayRegister = () => {
   const [form, setForm] = useState({
@@ -20,7 +22,9 @@ const PayRegister = () => {
     cellCarrier: "",
     userCellNo: "",
     agreeYn: "",
-    agreeDtime: ""
+    agreeDtime: "",
+    payPassword:"",
+    inputAuthNum:"",
   });
 
   const {
@@ -30,10 +34,19 @@ const PayRegister = () => {
     cellCarrier,
     userCellNo,
     agreeYn,
-    agreeDtime
+    agreeDtime,
+    payPassword,
+    inputAuthNum,
   } = form;
-  const [inputAuthNum, setInputAuthNum] = useState('')
-  const [authNum, setAuthNum] = useState("");
+
+  const [authBtnFlag, setAuthBtnFlag] = useState(false);
+  const [gpayPwd, setGpayPwd] = useState('');
+  const [gpayPwd2, setGpayPwd2] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  function toggleAuthNumBtn() {
+    setAuthBtnFlag(!authBtnFlag); 
+  }
 
   const onText = (evt) => {
     const { value, name } = evt.target;
@@ -46,17 +59,19 @@ const PayRegister = () => {
   const [step, setStep] = useState(1);
 
   const onNext = () => {
+    console.log(form)
     setStep((state) => state + 1);
   };
   const onPrev = () => {
     setStep((state) => state - 1);
   };
 
-  function confirmGpayPwd(gpayPwd1, gpayPwd2){
-    if (gpayPwd1===gpayPwd2){
-      /* gpayPwd 저장 */
+  function confirmGpayPwd(){
+    console.log("gpayPwd :" + gpayPwd)
+    console.log("gpayPwd2:" + gpayPwd2)
+
+    if (gpayPwd.length===6 && gpayPwd===gpayPwd2){
       PayRegisterHandler()
-      onNext()
     }else{
       onPrev()
     }    
@@ -72,25 +87,95 @@ const PayRegister = () => {
     const seconds = now.getSeconds().toString().padStart(2, "0");
 
     return `${year}${month}${day}${hour}${minutes}${seconds}`;
+  } 
+
+  // 성별 판별
+  function getGender(){
+    if(userGender%2===0){
+      return 'F'
+    }else{
+      return 'M'
+    }
   }
 
+  // 생년월일 처리
+  function getBirth(){
+    if(userGender==1 || userGender==2 || userGender==5 || userGender==6){
+      return "19" + userInfo;
+    }else if(userGender==9 || userGender==0){
+      return "18" + userInfo;
+    }else{
+      return "20" + userInfo;
+    }
+  }
+
+  // 인증문자 발송 요청
+  const handleSendSms = () => {
+    try {
+      const smsRequest = {
+        rphone: userCellNo,
+      };
+      axios.post('http://localhost:8080/api/payment/sms', smsRequest)  // 요청 본문을 객체로 감싸서 보냅니다.
+        .then(Response => {
+          if (Response.status === 200) {
+            toggleAuthNumBtn();
+            alert('문자 발송 성공');
+            console.log(Response.data);
+          } else {
+            console.log('전송 요청 실패');
+          }
+        })
+        .catch(error => {
+          console.error();
+        });
+    } catch (error) {
+      console.error('API 호출 오류:', error);
+    }
+  };
+
+  // 문자인증 검증 요청
+  const handleVerifySms =()=>{
+    try {
+      const smsRequest = {
+        rphone: userCellNo,
+        inputAuthNum: inputAuthNum,
+      }
+      axios.post('http://localhost:8080/api/payment/verify-sms',smsRequest)
+        .then(Response=>{
+          if(Response.status===200){
+            alert('문자 인증 성공')
+            onNext();
+          }else if(Response.status===208){
+            alert('문자 인증 실패')
+            return
+          }
+        })
+    } catch (error) {
+      console.error('API 호출 오류:', error);
+    }
+  }
+
+  // 계정등록 요청
   const PayRegisterHandler = async () => {
-    const apiUrl = 'http://localhost:8080/api/payment/register'; // 백엔드 API의 URL로 대체
+    setIsLoading(true);
+    
+    const apiUrl = 'http://localhost:8080/api/payment/register';
+    const gender = getGender();
+    const birth = getBirth();
+
   
     try {
-      // 요청 데이터 생성
       const requestData = {
-        userName: '이아라',
-        userInfo: '19930304',
-        userGender: 'F',
-        cellCarrier: 'KT',
-        userCellNo: '01077021685',
+        userName: userName,
+        userInfo: birth,
+        userGender: gender,
+        cellCarrier: cellCarrier,
+        userCellNo: userCellNo,
         agreeYn: 'Y',
         agreeDtime: getCurrentDtime(),
-        payPassword: '111111',
+        payPassword: gpayPwd,
       };
   
-      // HTTP POST 요청 설정
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -105,17 +190,18 @@ const PayRegister = () => {
   
       const responseData = await response.json();
       console.log('API 응답:', responseData);
-  
-      // {API 호출 성공 시 추가 작업}
-  
+      setIsLoading(false); // 로딩 중지
+      setStep(5);
     } catch (error) {
       console.error('API 호출 오류:', error);
-      // {오류 처리}
+    } finally{
+      setIsLoading(false);
     }
   };
 
   return (
     <div>
+      {isLoading && <LoadingModal/>}
       {step === 1 && (
         <RegisterStep1 form={form} onText={onText} onNext={onNext} />
       )}
@@ -123,13 +209,14 @@ const PayRegister = () => {
         <RegisterStep2
           {...form}
           inputAuthNum={inputAuthNum}
-          authNum={authNum}
           onText={onText}
-          onNext={onNext}
+          authBtnFlag={authBtnFlag}
+          handleSendSms={handleSendSms}
+          handleVerifySms={handleVerifySms}
         />
       )}
-      {step === 3 && <RegisterStep3 onNext={onNext} />}
-      {step === 4 && <RegisterStep4 onNext={onNext} confirmGpayPwd={confirmGpayPwd} />}
+      {step === 3 && <RegisterStep3 onNext={onNext} setGpayPwd={setGpayPwd} />}
+      {step === 4 && <RegisterStep4 onNext={onNext} gpayPwd2={gpayPwd2} setGpayPwd2={setGpayPwd2} confirmGpayPwd={confirmGpayPwd} />}
       {step === 5 && <RegisterComplete />}
     </div>
   );

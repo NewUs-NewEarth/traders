@@ -7,7 +7,10 @@
     "'": "file:hookform/resolvers/yup'",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+<<<<<<< HEAD
+=======
     "@headlessui/react": "^1.7.17",
+>>>>>>> d32fc4a22fe2d222031de86a439b007ea68403b9
     "@hookform/resolvers": "^3.3.1",
     "@material-ui/core": "^4.12.4",
     "@mattjennings/react-modal-stack": "^1.0.4",
@@ -20,6 +23,7 @@
     "axios": "^1.5.1",
     "bootstrap": "^5.3.2",
     "cors": "^2.8.5",
+    "headroom.js": "^0.12.0",
     "http-proxy-middleware": "^2.0.6",
     "jwt-decode": "^3.1.2",
     "lib-utils-ts": "^2.0.4-stable",
@@ -33,6 +37,7 @@
     "react-icons": "^4.11.0",
     "react-kakao-maps-sdk": "^1.1.21",
     "react-live-clock": "^6.1.16",
+    "react-responsive": "^9.0.2",
     "react-router-dom": "5.3.0",
     "react-scripts": "5.0.1",
     "react-toastify": "^9.1.3",

@@ -1,0 +1,113 @@
+/**
+ * @author hyunseul
+ * @create date 2023-10-19 17:32:22
+ * @modify date 2023-10-19 20:05:16
+
+ */
+
+ @media (max-height:721px){
+    .middle-container {
+     height: 720px !important;
+     overflow: hidden !important;
+    }
+}
+
+
+.middle-container {
+    height: 931px;
+    position: relative;
+    overflow: hidden;
+}
+  
+  .middle-container::before {
+    width: 1800px;
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: -10%;
+    right: 0;
+    top:-40%;
+    height:85%; /* 반원의 높이를 조절합니다. */
+    background-color: #efefef; /* 배경색을 미들 컨테이너와 동일한 색상으로 설정 */
+    border-radius: 33%; /* 원형 모양을 만듭니다. */
+  }
+  
+.d-flex .flex-row{
+    position: relative;
+    top: 100px;
+    justify-content: center;
+    margin: auto;
+    height: 450px;
+}
+
+
+.video {
+    margin-left: 150px;
+    box-shadow: 20px 20px 8px rgba(0, 0, 0, 0.1); 
+    transition: box-shadow 0.3s ease; 
+    
+  }
+  
+  .video:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); 
+  }
+
+  .text-start {
+    position:relative;
+    top:25px;
+  }
+
+  .video-text-1{
+    font-size:16pt;
+    font-weight:800;
+    margin-bottom:5px;
+  }
+
+  .video-text-2{
+    font-size:18pt;
+    font-weight:800;
+    color:rgb(111, 111, 111);
+  }
+
+
+  /* new css */
+  .news-header{
+    font-size: 15pt;
+    font-weight: 700;
+    background-color: #efefef; 
+    color: rgb(111, 111, 111);
+    padding: 5px 10px; 
+    border-radius: 3px; 
+    text-align: left;
+    margin-bottom: 15px;
+    height: 40px;
+
+  }
+
+  .plus-btn{
+    position: relative;
+    top:5px;
+    margin-right: 10px;
+    text-align: right !important;
+    display: flex;
+    float: right;
+    
+  }
+  .news-item {
+    display: flex; 
+    align-items: center;
+  }
+  
+  .news-img {
+    margin-bottom: 10px;;
+    width: 100px;
+    height: 100px; 
+    margin-right: 10px;
+    object-fit: cover;
+  }
+
+  #scrollable-area {
+    height: 250px; 
+    overflow-y: auto; 
+
+  }

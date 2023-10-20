@@ -1,7 +1,7 @@
 /**
  * @author ahrayi
  * @create date 2023-10-10 11:13:25
- * @modify date 2023-10-16 13:09:12
+ * @modify date 2023-10-18 13:42:17
  */
 
 package com.newus.traders.payment.controller;
@@ -102,5 +102,50 @@ public class PaymentController {
         // 파일 전송~~~~~~
 
         return new ResponseEntity<>(Collections.singletonMap("message", "계좌가 성공적으로 등록되었습니다."), HttpStatus.OK);
+    }
+
+    // 인증문자 발송
+    @Transactional
+    @PostMapping(value = "/payment/sms")
+    public ResponseEntity<?> sendSms(@RequestBody Map<String, String> requestBody) {
+        System.out.println(requestBody.toString());
+
+        String rphone = requestBody.get("rphone");
+        System.out.println(rphone);
+        try {
+
+            System.out.println(rphone);
+            paymentService.sendSms(rphone);
+            System.out.println(rphone);
+
+            return new ResponseEntity<>(Collections.singletonMap("message", "문자 발송 성공"), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(Collections.singletonMap("message", "문자 발송 실패"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 인증문자 일치 확인
+    @Transactional
+    @PostMapping(value = "/payment/verify-sms")
+    public ResponseEntity<?> verifySms(@RequestBody Map<String, String> requestBody) {
+        System.out.println(requestBody.toString());
+
+        try {
+            String rphone = requestBody.get("rphone");
+            System.out.println("controller: " + rphone);
+            String inputAuthNum = requestBody.get("inputAuthNum");
+            System.out.println("controller: " + inputAuthNum);
+
+            if (paymentService.verifyAuthNum(rphone, inputAuthNum)) {
+                return new ResponseEntity<>(Collections.singletonMap("message", "문자 인증 성공"), HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(Collections.singletonMap("message", "문자 인증 실패"),
+                        HttpStatus.ALREADY_REPORTED);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(Collections.singletonMap("message", "문자 인증 실패"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -1,7 +1,7 @@
 /**
  * @author ahrayi
  * @create date 2023-10-13 16:44:23
- * @modify date 2023-10-17 12:46:29
+ * @modify date 2023-10-18 19:50:27
  */
 
 import React, { useState } from 'react';
@@ -9,15 +9,34 @@ import { TextField, MenuItem, Button } from '@mui/material';
 import bankCode from './bankCode';
 import axios from 'axios';
 
-const AccountRegister1 = ({form, setForm, onNext, setRanNum}) => {
+const AccountRegister1 = ({form, onText, onNext, setRanNum}) => {
 
-    const onText = (evt) => {
-        const { value, name } = evt.target;
-        setForm({
-          ...form,
-          [name]: value,
-        });
-      };
+    const [address,setAddress] = useState('');
+
+    var themeObj = {
+        searchBgColor: "#198754", //검색창 배경색
+        queryTextColor: "#FFFFFF" //검색창 글자색
+     };
+
+    const handleAddressInput = () => {
+    if (window.daum && window.daum.Postcode) {
+        // 'daum' 객체 및 'Postcode' 함수가 로드된 상태에서 실행
+    
+        new window.daum.Postcode({
+            theme: themeObj,
+            popupTitle: '주소 검색 - TRADERS',
+            popupKey: 'popup1',
+            oncomplete: (data) => {
+                // 'data' 객체에서 주소와 상세주소 정보 가져오기
+                setAddress(data.address);
+                onText({ target: { value: data.address, name: 'addr1' } });
+        },
+        }).open();
+    } else {
+        // 'daum' 객체나 'Postcode' 함수가 로드되지 않은 경우에 대한 처리
+        console.error('Daum Postcode API is not available.');
+    }
+    };
 
     const handleAccountVerification =()=>{
 
@@ -79,7 +98,8 @@ const AccountRegister1 = ({form, setForm, onNext, setRanNum}) => {
             </TextField>
             <br/><br/>
                 
-            주소     <input type='text' id='addr1' name='addr1' required onChange={onText}></input><Button>주소입력</Button><br/>
+            주소     <input type='text' id='addr1' name='addr1' value={address} required onChange={onText} readOnly></input>
+                     <Button onClick={handleAddressInput}>주소입력</Button><br/>
             상세주소 <input type='text' id='addr2' name='addr2' required onChange={onText}></input>
                 
             <br/><br/>
