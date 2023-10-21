@@ -6,11 +6,8 @@
 package com.newus.traders.chat.service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import com.newus.traders.chat.dto.ChatDto;
 import com.newus.traders.chat.repository.ChatRepository;
@@ -43,9 +40,9 @@ public class ChatService {
     }
 
     // 채팅방 목록 조회
-    public Flux<String> getChatRoomListBySender(String sender) {
+    public Flux<String> getChatRoomListByUser(String username ) {
 
-        return chatRepository.findBySenderOrReceiver(sender, sender)
+        return chatRepository.findBySenderOrReceiver(username, username)
                 .map(ChatDto::getRoomNum)
                 .distinct();
     }
