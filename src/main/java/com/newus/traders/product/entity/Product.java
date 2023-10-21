@@ -16,14 +16,19 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Where;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.newus.traders.product.form.ProductForm;
 import com.newus.traders.product.type.ProductStatus;
+import com.newus.traders.user.entity.User;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,14 +38,16 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE Product SET is_Deleted = 1 WHERE id = ?")
+@Where(clause = "is_deleted = 0")
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    // @ManyToOne
-    // @JsonBackReference
-    // private UserEntity seller;
+    @ManyToOne
+    @JsonBackReference
+    private User seller;
 
     private String name;
 
@@ -69,10 +76,11 @@ public class Product {
 
     private Long likes;
 
-    private boolean isDeleted;
+    private boolean isDeleted = Boolean.FALSE;
 
     @Builder
-    public Product(ProductForm productForm) {
+    public Product(User user, ProductForm productForm) {
+        this.seller = user;
         this.name = productForm.getName();
         this.price = productForm.getPrice();
         this.description = productForm.getDescription();
@@ -81,9 +89,8 @@ public class Product {
         this.longitude = productForm.getLongitude();
         this.category = productForm.getCategory();
         this.likes = 0L;
-        this.isDeleted = false;
 
-    }  
+    }
 
     public void updateProduct(ProductForm productForm) {
         this.name = productForm.getName();
@@ -100,10 +107,6 @@ public class Product {
 
     public void setLikes(Long likes) {
         this.likes = likes;
-    }
-
-    public void setIsDeleted() {
-        this.isDeleted = true;
     }
 
 }
