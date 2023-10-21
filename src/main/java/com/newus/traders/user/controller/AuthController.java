@@ -6,28 +6,21 @@
 
 package com.newus.traders.user.controller;
 
-import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.newus.traders.user.controller.dto.TokenDTO;
-import com.newus.traders.user.controller.dto.TokenRequestDTO;
-import com.newus.traders.user.controller.dto.UserRequestDTO;
-import com.newus.traders.user.controller.dto.UserResponseDTO;
+import com.newus.traders.user.dto.TokenDTO;
+import com.newus.traders.user.dto.TokenRequestDTO;
+import com.newus.traders.user.dto.UserRequestDTO;
+import com.newus.traders.user.dto.UserResponseDTO;
 import com.newus.traders.user.service.AuthService;
 
-import antlr.Token;
 import lombok.RequiredArgsConstructor;
-
-
 
 @RestController
 @RequestMapping("/api")
@@ -46,7 +39,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(userRequestDTO));
     }
 
-     @PostMapping("/auth/reissue")
+    @PostMapping("/auth/reissue")
     public ResponseEntity<TokenDTO> reissue(@RequestBody TokenRequestDTO tokenRequestDTO, HttpServletRequest request) {
         String refreshToken = request.getHeader("Refresh"); // Refresh 헤더 가져오기
         System.out.println("Refresh 헤더 값: " + refreshToken);
@@ -55,5 +48,3 @@ public class AuthController {
         return ResponseEntity.ok(authService.reissue(tokenRequestDTO));
     }
 }
-
-
