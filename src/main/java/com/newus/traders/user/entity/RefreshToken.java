@@ -1,3 +1,14 @@
+/**
+ * @author heera youn
+ * @create date 2023-10-16 10:54:45
+ * @modify date 2023-10-16 10:54:45
+ */
+
+/**
+ * @author wheesunglee
+ * @create date 2023-10-21 01:19:05
+ * @modify date 2023-10-21 01:19:05
+ */
 package com.newus.traders.user.entity;
 
 import lombok.Builder;
@@ -14,18 +25,21 @@ import javax.persistence.Table;
 @Table(name = "refresh_token")
 @Entity
 public class RefreshToken {
-//RDB 로 구현하게 된다면 생성/수정 시간 컬럼을 추가하여 배치 작업으로 만료된 토큰들을 삭제해야 함
+    // RDB 로 구현하게 된다면 생성/수정 시간 컬럼을 추가하여 배치 작업으로 만료된 토큰들을 삭제해야 함
     @Id
     @Column(name = "rt_key")
-    private String key;//userid
+    private String key;// userid
 
     @Column(name = "rt_value")
-    private String value;//refresh token string
+    private String value;// refresh token string
+    @Column(name = "rt_expires")
+    private Long expiration;// refresh token string
 
     @Builder
-    public RefreshToken(String key, String value) {
+    public RefreshToken(String key, String value, Long expiration) {
         this.key = key;
         this.value = value;
+        this.expiration = expiration;
     }
 
     public RefreshToken updateValue(String token) {

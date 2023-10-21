@@ -1,29 +1,35 @@
-
 /**
  * @author hyunseul
  * @create date 2023-10-04 13:02:02
- * @modify date 2023-10-17 16:30:03
+ * @modify date 2023-10-20 13:51:58
  */
 
-import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import Clock from 'react-live-clock';
-import '../../assets/css/ChatStyle.css'
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Chatprofile from "../../assets/img/Chatprofile.png";
-import {AiOutlineCalendar} from 'react-icons/ai';
-import {MdArrowBackIosNew} from 'react-icons/md'
-import {PiCreditCard} from 'react-icons/pi'
-import { useHistory } from "react-router-dom/cjs/react-router-dom";
-import ChatScheduleModal from "./ChatScheduleModal";
-import Container from 'react-bootstrap/Container';
+/**
+ * @author wheesunglee
+ * @create date 2023-10-19 23:22:49
+ * @modify date 2023-10-19 23:22:56
+ */
 
+import "bootstrap/dist/css/bootstrap.min.css";
+import jwt_decode from "jwt-decode";
+import React, {useEffect, useRef, useState} from "react";
+import Container from "react-bootstrap/Container";
+import {AiOutlineCalendar} from "react-icons/ai";
+import {MdArrowBackIosNew} from "react-icons/md";
+import {PiCreditCard} from "react-icons/pi";
+import Clock from "react-live-clock";
+import {withRouter} from "react-router-dom";
+import {useHistory, useParams} from "react-router-dom/cjs/react-router-dom";
+import "../../assets/css/ChatStyle.css";
+import Chatprofile from "../../assets/img/Chatprofile.png";
+import TokenRefresher from "../service/TokenRefresher";
+import ChatScheduleModal from "./ChatScheduleModal";
 
 // 채팅 내용
-const ChatBox = () => {
-  const { roomNum } = useParams();
-  const [username, setUsername] = useState("");
+const ChatBox = (props) => {
+  const [receiver, setReceiver] = useState();
+  const [productId, setProductId] = useState();
+  const [product, setProduct] = useState();
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const eventSourceRef = useRef(null);
@@ -32,98 +38,123 @@ const ChatBox = () => {
   const [isModalVisible, setModalVisible] = useState(false); // 모달
   const [reservedData, setReservedData] = useState(null); // 예약 정보 저장
   const messageEndRef = useRef(null);
-  const [savedData, setSavedData] = useState(null); 
+  const [savedData, setSavedData] = useState(null);
   const [showSavedData, setShowSavedData] = useState(false);
 
+  ////////////////////////////////////////
+  const roomNum = useParams().roomNum;
+  console.log("chatBox-roomNum", roomNum);
+  const sender = window.user;
+  console.log("sender", sender);
 
-  
+  function setInfo(roomNum, sender) {
+    const data = jwt_decode(roomNum);
+
+    setProductId(data.productId);
+    const seller = data.seller;
+    console.log("seller", seller);
+    const buyer = data.buyer;
+    console.log("buyer", buyer);
+
+    if (sender == seller) {
+      console.log("셀러가 로그인중?");
+      setReceiver(buyer);
+    } else {
+      console.log("바이어가 로그인중?");
+      setReceiver(seller);
+    }
+  }
+
+  console.log("receiver", receiver);
+
+  useEffect(() => {
+    setInfo(roomNum);
+    fetchData();
+  }, []);
+
+  ///////////////////////////////////////
+
   const toggleModal = () => {
-    setModalVisible(prevModalVisible => !prevModalVisible);
-  };
-  
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messageRef.current.scrollTop = messageRef.current.scrollHeight;
+    setModalVisible((prevModalVisible) => !prevModalVisible);
   };
 
-  // 이전 채팅 내용을 서버에서 가져오기
-  useEffect(() => {
-    setUsername(prompt("sender:"))
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`http://localhost:8080/api/chat/roomNum/${roomNum}`);
-        const chatData = response.data || [];
+  const fetchData = async () => {
+    try {
+      const response = await TokenRefresher.get(
+        `http://localhost:8080/api/chat/roomNum/${roomNum}`
+      );
+      const chatData = response.data || [];
 
-        console.log("서버에서 받아온 데이터:", chatData); // 이 부분을 추가하여 데이터를 콘솔에 출력
-         if (chatData) {
-          setMessages([chatData]);          
-         } else {
-           console.error("서버에서 받아온 데이터가 올바른 형식이 아닙니다.");
-         }
-      } catch (error) {
-        console.error("이전 채팅 내용을 가져오는 데 실패했습니다.", error);
+      console.log("서버에서 받아온 데이터:", chatData); // 이 부분을 추가하여 데이터를 콘솔에 출력
+      if (chatData) {
+        setMessages([chatData]);
+      } else {
+        console.error("서버에서 받아온 데이터가 올바른 형식이 아닙니다.");
       }
-    };
-    fetchData(); // 이전 채팅 내용을 가져오기   
-  }, [roomNum]);
+    } catch (error) {
+      console.error("이전 채팅 내용을 가져오는 데 실패했습니다.", error);
+    }
+  };
 
-  
   // EventSource 초기화 및 메시지 받아오기
   useEffect(() => {
-    eventSourceRef.current = new EventSource(`http://localhost:8080/api/chat/roomNum/${roomNum}`);
-  
+    eventSourceRef.current = new EventSource(
+      `http://localhost:8080/api/chat/roomNum/${roomNum}`
+    );
+
     eventSourceRef.current.onmessage = (event) => {
       const newData = JSON.parse(event.data);
       // 이전 메시지와 새로운 메시지를 비교하여 새로운 메시지만 업데이트
-      if (!messages.some(msg => msg.id === newData.id)) {
-        setMessages(prevMessages => [...prevMessages, newData]);
+      if (!messages.some((msg) => msg.id === newData.id)) {
+        setMessages((prevMessages) => [...prevMessages, newData]);
       }
     };
     scrollToBottom();
 
     return () => {
       eventSourceRef.current.close();
-     
     };
   }, [messages]); // messages가 변경될 때마다 useEffect가 호출됨
 
+  const scrollToBottom = () => {
+    messageRef.current.scrollTop = messageRef.current.scrollHeight;
+  };
 
-  // 서버에 메세지 보내기 
+  // 서버에 메세지 보내기
   const sendMessageToServer = async (message) => {
-      
-    if (typeof message === 'string' && message.trim() !== "") {
-    const chat = {
-      text: message,
-      sender: username,
-      // receiver:username,
-      roomNum: roomNum,
-    };
-    try {
-      if (reservedData && reservedData.date && reservedData.location) {
-        setSavedData({
-          date: reservedData.date,
-          location: reservedData.location,
-        });
-        setShowSavedData(true);
-        // 예약 데이터 전송
-        await axios.post("http://localhost:8080/api/chat/save", reservedData);
-      }
+    console.log(sender);
+    console.log(receiver);
+    if (typeof message === "string" && message.trim() !== "") {
+      const chat = {
+        text: message,
+        sender: sender,
+        receiver: receiver,
+        roomNum: roomNum,
+      };
+      try {
+        if (reservedData && reservedData.date && reservedData.location) {
+          setSavedData({
+            date: reservedData.date,
+            location: reservedData.location,
+          });
+          setShowSavedData(true);
+          // 예약 데이터 전송
+          await TokenRefresher.post(
+            "http://localhost:8080/api/chat/save",
+            reservedData
+          );
+        }
 
-      await axios.post("http://localhost:8080/api/chat", chat);
-      console.log("메시지 전송 완료 " + chat);
-      setMessage("");
-      scrollToBottom();
-      setMessages(prevMessages => [...prevMessages, chat]);
-    } catch (error) {
-      console.error("메시지 전송 오류:", error);
+        await TokenRefresher.post("http://localhost:8080/api/chat", chat);
+        console.log("메시지 전송 완료 " + chat);
+        setMessage("");
+        scrollToBottom();
+        setMessages((prevMessages) => [...prevMessages, chat]);
+      } catch (error) {
+        console.error("메시지 전송 오류:", error);
+      }
     }
-  }
-};
-  
+  };
 
   const handleSaveModal = async (data) => {
     console.log("모달에서 받은 데이터:", data);
@@ -131,8 +162,8 @@ const ChatBox = () => {
     // 예약 정보 메시지를 서버에 전송
     const notice = {
       text: "일정잡힘",
-      sender: username,
-      // receiver: username,
+      sender: sender,
+      receiver: receiver,
       roomNum: roomNum,
       date: data.date,
       location: data.location,
@@ -140,7 +171,7 @@ const ChatBox = () => {
 
     try {
       // 메시지 전송
-      await axios.post("http://localhost:8080/api/chat/save", notice);
+      await TokenRefresher.post("http://localhost:8080/api/chat/save", notice);
       console.log("모달 메시지 전송 완료:", notice);
 
       // 데이터 상태 변수 업데이트 (date와 location만 저장)
@@ -149,189 +180,193 @@ const ChatBox = () => {
         location: data.location,
       });
       setShowSavedData(true);
-    
     } catch (error) {
       console.error("메시지 전송 또는 데이터 저장 실패:", error);
     }
 
     setModalVisible(false); // 모달 닫기
-    
   };
 
-
-  
   // 보내는 사람 대화박스(블루)
   const getSendMsgBox = (data) => {
-    const createdAt = data.createdAt
-    if(createdAt){
-    const tm = data.createdAt.substring(11,16)
+    const createdAt = data.createdAt;
+    if (createdAt) {
+      const tm = data.createdAt.substring(11, 16);
 
-    return (
-      <div>
-      <div className="sent_msg">
-        <p className="message-content">{data.text}</p>
-      </div>
-      <span className="sent_time_date">{tm}</span>
-      </div>
-    );
-  }
-  return null;
-};
+      return (
+        <div>
+          <div className="sent_msg">
+            <p className="message-content">{data.text}</p>
+          </div>
+          <span className="sent_time_date">{tm}</span>
+        </div>
+      );
+    }
+    return null;
+  };
 
-// 받는 사람 대화박스(그레이)
-const getReceiveMsgBox = (data) => {
-  const createdAt = data.createdAt;
-  if (createdAt) {
-    const tm = data.createdAt.substring(11, 16);
-    return (
-      <div>
-      <div className="received_withd_msg">
-        <p className="message-content">{data.text}</p>
-      </div> 
-        <span className="time_date">{tm}</span>
-      </div>
-    );
-  }
-  return null;
-};
+  // 받는 사람 대화박스(그레이)
+  const getReceiveMsgBox = (data) => {
+    const createdAt = data.createdAt;
+    if (createdAt) {
+      const tm = data.createdAt.substring(11, 16);
+      return (
+        <div>
+          <div className="received_withd_msg">
+            <p className="message-content">{data.text}</p>
+          </div>
+          <span className="time_date">{tm}</span>
+        </div>
+      );
+    }
+    return null;
+  };
 
-
-const saveData = (data) => {
-  //qkrtlconsole.log(sender)
-  
-  // if (showSavedData && savedData && savedData.date === data.date 
-  //   && savedData.location === data.location) {
-  //     console.log("예약 메세지 출력하는 곳")
+  const saveData = (data) => {
     return (
       <div>
         <div className="notice-box">
           <div className="notice-message">
-            <p className="notice-header"><b style={{color:'green'}}>{data.sender}</b>님이 약속을 잡았습니다!</p>
-           
+            <p className="notice-header">
+              <b style={{ color: "green" }}>{data.sender}</b>님이 약속을
+              잡았습니다!
+            </p>
+
             <li className="notice-content">약속일: {data.date}</li>
             <li className="notice-content">약속 장소: {data.location}</li>
-            
           </div>
         </div>
       </div>
     );
-  }
-  //return null;
-//
+  };
 
-// 예약 정보가 있는 경우에만 추가하도록 변경
-useEffect(() => {
-  if (reservedData) {
-    setMessages(prevMessages => [...prevMessages, reservedData]);
-  }
-}, [reservedData]);
+  // 예약 정보가 있는 경우에만 추가하도록 변경
+  useEffect(() => {
+    if (reservedData) {
+      setMessages((prevMessages) => [...prevMessages, reservedData]);
+    }
+  }, [reservedData]);
 
+  const sendMessage = () => {
+    if (message.trim() !== "") {
+      sendMessageToServer(message);
+    }
+  };
 
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+  };
 
-const sendMessage = () => {
-  if (message.trim() !== "") {
-    sendMessageToServer(message);
-  }
-};
+  const handleEnterPress = (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+      console.log("Enter pressed");
+    }
+  };
 
-const handleInputChange = (e) => {
-  setMessage(e.target.value);
-};
-
-const handleEnterPress = (e) => {
-  if (e.key === "Enter") {
-    sendMessage();
-    console.log("Enter pressed")
-  }
-
-};
-
-// 뒤로가기 버튼 클릭 이벤트 함수
- const handleBackButtonClick = () => {
-   history.push("/chat/list");
- }
+  const handleBackButtonClick = () => {
+    history.push("/chat/list");
+  };
 
   const handleCardClick = () => {
-    history.push("/")
-  }
+    history.push("/");
+  };
 
   return (
     <>
-    <Container style={{maxWidth:"1040px"}}>
-    <ChatScheduleModal show={isModalVisible} handleClose={toggleModal}  onsave={handleSaveModal}/>
-    <div >
-      <div className="message-container" ref={messageRef}>
-        <div className="message-header">
-          <div className="message-header-icons">
-          <MdArrowBackIosNew size='20px' onClick={handleBackButtonClick}/>　
-          <img src={Chatprofile} className="profile_img" alt="상품 이미지" value={username}/> 
-          
-          <AiOutlineCalendar className="icon-calendar" size="35px" onClick={toggleModal} />
-          <PiCreditCard className="icon-card" size="35px" onClick={handleCardClick}></PiCreditCard>
-          </div> {/* message-header-icons 끝 */}
-          </div> {/* message-header 끝 */}
-          
-       
-        <div className="message-box">
-          <div className="clock-container">
-            <div className="clock">
-              <span>
-              <Clock format={'YYYY년 MM월 DD일'} ticking={false} timezone={"Asia/Seoul"} />
-              </span>
-            </div> {/* clock 끝 */}
-          </div> {/* clock-container 끝 */}
-          {messages.map((data, index) => {
-            // if (data.date && data.location) {
-             console.log(typeof data.text)
-            
-              if (data.text === "일정잡힘") {
-                return (
-                  <div key={index}>
-                  {saveData(data)}
-                </div>
-              );
-            } else if (data.sender === username && !data.date) {
-              return (
-                <div key={index}>
-                  {getSendMsgBox(data)}
-                </div>
-              );
-            } else if (data.sender !== username && !data.date) {
-              return (
-                <div key={index}>
-                  {getReceiveMsgBox(data)}
-                </div>
-              ); 
-            }
-            return null;
-          })}
+      <Container style={{ maxWidth: "1040px" }}>
+        <ChatScheduleModal
+          show={isModalVisible}
+          handleClose={toggleModal}
+          onsave={handleSaveModal}
+        />
+        <div>
+          <div className="message-container" ref={messageRef}>
+            <div className="message-header">
+              <div className="message-header-icons">
+                <MdArrowBackIosNew
+                  size="20px"
+                  onClick={handleBackButtonClick}
+                />
+
+                <img
+                  src={Chatprofile}
+                  className="profile_img"
+                  alt="상품 이미지"
+                  value={receiver}
+                />
+                <AiOutlineCalendar
+                  className="icon-calendar"
+                  size="35px"
+                  onClick={toggleModal}
+                />
+                <PiCreditCard
+                  className="icon-card"
+                  size="35px"
+                  onClick={handleCardClick}
+                ></PiCreditCard>
+              </div>{" "}
+              {/* message-header-icons 끝 */}
+            </div>{" "}
+            {/* message-header 끝 */}
+            <div className="message-box">
+              <div className="clock-container">
+                <div className="clock">
+                  <span>
+                    <Clock
+                      format={"YYYY년 MM월 DD일"}
+                      ticking={false}
+                      timezone={"Asia/Seoul"}
+                    />
+                  </span>
+                </div>{" "}
+                {/* clock 끝 */}
+              </div>{" "}
+              {/* clock-container 끝 */}
+              {messages.map((data, index) => {
+                // if (data.date && data.location) {
+                console.log(typeof data.text);
+
+                if (data.text === "일정잡힘") {
+                  return <div key={index}>{saveData(data)}</div>;
+                } else if (data.sender === sender && !data.date) {
+                  return <div key={index}>{getSendMsgBox(data)}</div>;
+                } else if (data.sender !== sender && !data.date) {
+                  return <div key={index}>{getReceiveMsgBox(data)}</div>;
+                }
+                return null;
+              })}
               <div ref={messageEndRef}></div>
-
-      {/* 모달 및 채팅창 UI 코드 (기존 코드) */} 
-            </div> {/* message-box 끝 */} 
+              {/* 모달 및 채팅창 UI 코드 (기존 코드) */}
+            </div>{" "}
+            {/* message-box 끝 */}
             <div style={{ float: "left", clear: "both" }}></div>
-
-          <div className="message-footer">
-          <div className="input_msg_write">
-
-            <input
-              type="text"
-              placeholder="메시지를 입력하세요."
-              value={message}
-              onChange={handleInputChange}
-              onKeyDown={handleEnterPress}
-            />
-            <button className="msg_send_btn" type="button" onClick={sendMessage}>
-              전송
-            </button>
-            </div>
-  
-         </div>  {/* input_msg_write 끝 */}
-      </div> {/* message-container 끝 */}
-    </div>  {/* message 끝 */}
-    </Container>
+            <div className="message-footer">
+              <div className="input_msg_write">
+                <input
+                  type="text"
+                  placeholder="메시지를 입력하세요."
+                  value={message}
+                  onChange={handleInputChange}
+                  onKeyDown={handleEnterPress}
+                />
+                <button
+                  className="msg_send_btn"
+                  type="button"
+                  onClick={sendMessage}
+                >
+                  전송
+                </button>
+              </div>
+            </div>{" "}
+            {/* input_msg_write 끝 */}
+          </div>{" "}
+          {/* message-container 끝 */}
+        </div>{" "}
+        {/* message 끝 */}
+      </Container>
     </>
   );
-}
+};
 
-export default ChatBox;
+export default withRouter(ChatBox);
