@@ -1,27 +1,27 @@
 /**
  * @author wheesunglee
  * @create date 2023-10-04 16:10:26
- * @modify date 2023-10-11 15:31:55
+ * @modify date 2023-10-21 01:12:49
  */
 package com.newus.traders.redis.service;
-
-import java.time.LocalDate;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import com.newus.traders.exception.CustomException;
 import com.newus.traders.exception.ErrorCode;
 import com.newus.traders.product.entity.Product;
 import com.newus.traders.product.repository.ProductRepository;
+import com.newus.traders.user.entity.RefreshToken;
 import com.newus.traders.user.entity.User;
 import com.newus.traders.user.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -76,11 +76,7 @@ public class RedisService {
         Object objectCount = redisTemplate.execute(connection -> {
             return connection.bitCount(productKey.getBytes());
         }, true);
-        // return (Long) redisTemplate.execute(connection ->
 
-        // {
-        // return connection.bitCount(productKey.getBytes());
-        // }, true);
         return objectCount;
     }
 
@@ -100,7 +96,7 @@ public class RedisService {
         return operationsForValue().getBit(dateKey, user.getUserId());
     }
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(fixedRate = 60 * 1000)
     public void updateLikesInDB() {
 
         Set<String> productKeySet = redisTemplate.keys("productId*");
@@ -120,13 +116,31 @@ public class RedisService {
                 }
 
                 product.setLikes((Long) countLikes(productId));
-
+                System.out.println("::::::::: 그냥 countLiked로 출력:::::::" + product.getLikes());
                 productRepository.save(product);
+                System.out.println("::::::::: 그냥 getAndDel 출력:::::::" + operationsForValue().getAndDelete(productKey));
+
             }
 
         }
-        System.out.println("views update complete");
+        System.out.println("likes updated");
 
+    }
+
+    public void saveRefreshToken(RefreshToken refreshToken) {
+        operationsForValue()
+                .set("RT:" + refreshToken.getKey(), refreshToken.getValue(), refreshToken.getExpiration(),
+                        TimeUnit.MILLISECONDS);
+
+    }
+
+    public Object getRefreshToken(String key) {
+        Object refreshToken = operationsForValue().get("RT:" + key);
+        if (refreshToken == null) {
+            throw new RuntimeException("로그아웃 된 사용자입니다.");
+        }
+
+        return refreshToken;
     }
 
 }

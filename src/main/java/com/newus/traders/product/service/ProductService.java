@@ -59,14 +59,39 @@ public class ProductService {
 
             ProductDto productDto = new ProductDto(product);
 
-            // productDto.setLiked(redisService.checkIfLiked(product.getId(),
-            // user.getUserId));
+            //productDto.setLiked(redisService.checkIfLiked(product.getId(),user.getUsername()));
 
-            //Object objectCount = redisService.countLikes(product.getId());
+            Object objectCount = redisService.countLikes(product.getId());
 
-            ////if (objectCount != null) {
-                //productDto.setLikes((Long) objectCount);
-            //}
+            if (objectCount != null) {
+                productDto.setLikes((Long) objectCount);
+            }
+
+            productDtoList.add(productDto);
+        }
+
+        return productDtoList;
+    }
+
+    public List<ProductDto> getMyProducts(String username) {
+        User user = getUser(username);
+
+        List<Product> productList = productRepository.findBySeller(user);
+
+        if (productList.size() == 0) {
+            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        List<ProductDto> productDtoList = new ArrayList<>();
+        for (Product product : productList) {
+
+            ProductDto productDto = new ProductDto(product);
+
+            Object objectCount = redisService.countLikes(product.getId());
+
+            if (objectCount != null) {
+                productDto.setLikes((Long) objectCount);
+            }
 
             productDtoList.add(productDto);
         }
@@ -84,11 +109,11 @@ public class ProductService {
         // productDto.setLiked(redisService.checkIfLiked(product.getId(),
         // user.getUserId()));
 
-        //Object objectCount = redisService.countLikes(product.getId());
+        // Object objectCount = redisService.countLikes(product.getId());
 
-        //if (objectCount != null) {
-          //  productDto.setLikes((Long) objectCount);
-        //}
+        // if (objectCount != null) {
+        // productDto.setLikes((Long) objectCount);
+        // }
         return productDto;
     }
 
@@ -166,7 +191,7 @@ public class ProductService {
 
     @Transactional
     public String updateProduct(String username, Long productId, ProductForm productForm,
-            List<MultipartFile> newFiles, List<Integer> removedFiles) {
+                                List<MultipartFile> newFiles, List<Integer> removedFiles) {
 
         User user = getUser(username);
 

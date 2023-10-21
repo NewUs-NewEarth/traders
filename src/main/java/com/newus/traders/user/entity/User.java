@@ -1,19 +1,8 @@
 package com.newus.traders.user.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import lombok.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "member")
@@ -26,7 +15,7 @@ public class User {
 
     @Id
     @Column(name = "user_id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long userId;
 
     @Column(name = "username", length = 50, unique = true)
@@ -49,6 +38,9 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Authority authority;
+
+    @Column(name = "point")
+    private int point;
 
     // @ManyToMany
     // @JoinTable(

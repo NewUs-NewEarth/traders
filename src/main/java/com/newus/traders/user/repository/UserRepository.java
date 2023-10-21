@@ -5,23 +5,22 @@
  */
 package com.newus.traders.user.repository;
 
-import java.util.Optional;
-
+import com.newus.traders.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.newus.traders.user.entity.User;
+import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-   // 현재 Email이 LoginID
-   Optional<User> findByEmail(String email);
+    // 현재 Email이 LoginID
+    Optional<User> findByEmail(String email);
 
-   Boolean existsByEmail(String email);
+    Boolean existsByEmail(String email);
 
-   Optional<User> findByUsername(String username);
+    Optional<User> findByUsername(String username);
 
-   boolean existsByUsername(String username);
-   
+    boolean existsByUsername(String username);
+
 
 }

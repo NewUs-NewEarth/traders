@@ -1,12 +1,12 @@
 package com.newus.traders.user.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.newus.traders.exception.CustomException;
+import com.newus.traders.exception.ErrorCode;
 import com.newus.traders.user.dto.UserResponseDTO;
 import com.newus.traders.user.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,13 +17,13 @@ public class UserService {
     public UserResponseDTO findMemberInfoById(Long userId) {
         return userRepository.findById(userId)
                 .map(UserResponseDTO::of)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     public UserResponseDTO findMemberInfoByEmail(String email) {
         return userRepository.findByEmail(email)
                 .map(UserResponseDTO::of)
-                .orElseThrow(() -> new RuntimeException("유저 정보가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     public boolean existsByUsername(String username) {

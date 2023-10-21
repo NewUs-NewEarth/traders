@@ -1,7 +1,7 @@
 // /**
 //  * @author wheesunglee
 //  * @create date 2023-10-04 16:10:23
-//  * @modify date 2023-10-04 16:10:23
+//  * @modify date 2023-10-21 00:44:35
 //  */
 package com.newus.traders.redis.controller;
 
@@ -53,14 +53,12 @@ public class RedisController {
     public void getLikes() {
 
         Long counts = (Long) redisService.countLikes(1L);
-        redisService.updateLikesInDB();
-        ///////////
     }
 
     @GetMapping("/redis/checkLiked/{id}")
     public boolean checkIfLiked(@RequestHeader("token") String accessToken, @PathVariable("id") Long productId) {
-        System.out.println("좋아요????????" + redisService.checkIfLiked(productId, getUserDetails(accessToken)));
-        ;
+        System.out.println("::::::::::::::좋아요????????" + redisService.checkIfLiked(productId, getUserDetails(accessToken)));
+
         return redisService.checkIfLiked(productId, getUserDetails(accessToken));
     }
 

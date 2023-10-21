@@ -1,12 +1,8 @@
 package com.newus.traders.user.service;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.newus.traders.exception.CustomException;
+import com.newus.traders.exception.ErrorCode;
+import com.newus.traders.redis.service.RedisService;
 import com.newus.traders.user.dto.TokenDTO;
 import com.newus.traders.user.dto.TokenRequestDTO;
 import com.newus.traders.user.dto.UserRequestDTO;
@@ -14,10 +10,14 @@ import com.newus.traders.user.dto.UserResponseDTO;
 import com.newus.traders.user.entity.RefreshToken;
 import com.newus.traders.user.entity.User;
 import com.newus.traders.user.jwt.TokenProvider;
-import com.newus.traders.user.repository.RefreshTokenRepository;
 import com.newus.traders.user.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,12 +26,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisService redisService;
+    // private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public UserResponseDTO signup(UserRequestDTO userRequestDTO) {
         if (userRepository.existsByEmail(userRequestDTO.getEmail())) {
-            throw new RuntimeException("이미 가입되어 있는 유저입니다");
+            throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         User user = userRequestDTO.toUser(passwordEncoder);
@@ -56,9 +57,11 @@ public class AuthService {
         RefreshToken refreshToken = RefreshToken.builder()
                 .key(authentication.getName())
                 .value(tokenDTO.getRefreshToken())
+                .expiration(tokenDTO.getRefreshTokenExpiresIn())
                 .build();
-
-        refreshTokenRepository.save(refreshToken);
+        // refreshTokenRepository.save(refreshToken);
+        // 레디스에 저장
+        redisService.saveRefreshToken(refreshToken);
 
         // 5. 토큰 발급
         return tokenDTO;
@@ -71,18 +74,23 @@ public class AuthService {
         System.out.println("DTO의 RT 값: " + tokenRequestDTO.getRefreshToken());
         // 1. Refresh Token 검증
         if (!tokenProvider.validateToken(tokenRequestDTO.getRefreshToken())) {
-            throw new RuntimeException("Refresh Token 이 유효하지 않습니다.");
+            throw new CustomException(ErrorCode.TOKEN_NOT_VALID);
         }
 
         // 2. Access Token 에서 Member ID 가져오기
         Authentication authentication = tokenProvider.getAuthentication(tokenRequestDTO.getAccessToken());
 
         // 3. 저장소에서 Member ID 를 기반으로 Refresh Token 값 가져옴
-        RefreshToken refreshToken = refreshTokenRepository.findByKey(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("로그아웃 된 사용자입니다."));
+        // RefreshToken refreshToken =
+        // refreshTokenRepository.findByKey(authentication.getName())
+        // .orElseThrow(() -> new RuntimeException("로그아웃 된 사용자입니다."));
+        String refreshTokenValue = (String) redisService.getRefreshToken(authentication.getName());
 
         // 4. Refresh Token 일치하는지 검사
-        if (!refreshToken.getValue().equals(tokenRequestDTO.getRefreshToken())) {
+        // if (!refreshToken.getValue().equals(tokenRequestDTO.getRefreshToken())) {
+        // throw new RuntimeException("토큰의 유저 정보가 일치하지 않습니다.");
+        // }
+        if (!refreshTokenValue.equals(tokenRequestDTO.getRefreshToken())) {
             throw new RuntimeException("토큰의 유저 정보가 일치하지 않습니다.");
         }
 
@@ -95,8 +103,15 @@ public class AuthService {
         System.out.println("새로 발급받은 RT : " + tokenDTO.getRefreshToken());
 
         // 6. 저장소 정보 업데이트
-        RefreshToken newRefreshToken = refreshToken.updateValue(tokenDTO.getRefreshToken());
-        refreshTokenRepository.save(newRefreshToken);
+        // RefreshToken newRefreshToken =
+        // refreshToken.updateValue(tokenDTO.getRefreshToken());
+        // refreshTokenRepository.save(newRefreshToken);
+        RefreshToken newRefreshToken = RefreshToken.builder()
+                .key(authentication.getName())
+                .value(tokenDTO.getRefreshToken())
+                .expiration(tokenDTO.getRefreshTokenExpiresIn())
+                .build();
+        redisService.saveRefreshToken(newRefreshToken);
 
         // 토큰 발급
         System.out.println("TokenDTO의 AT: " + tokenDTO.getAccessToken());

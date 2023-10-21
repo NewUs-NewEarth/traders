@@ -12,14 +12,14 @@
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import jwt_decode from "jwt-decode";
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import Container from "react-bootstrap/Container";
-import { AiOutlineCalendar } from "react-icons/ai";
-import { MdArrowBackIosNew } from "react-icons/md";
-import { PiCreditCard } from "react-icons/pi";
+import {AiOutlineCalendar} from "react-icons/ai";
+import {MdArrowBackIosNew} from "react-icons/md";
+import {PiCreditCard} from "react-icons/pi";
 import Clock from "react-live-clock";
-import { withRouter } from "react-router-dom";
-import { useHistory, useParams } from "react-router-dom/cjs/react-router-dom";
+import {withRouter} from "react-router-dom";
+import {useHistory, useParams} from "react-router-dom/cjs/react-router-dom";
 import "../../assets/css/ChatStyle.css";
 import Chatprofile from "../../assets/img/Chatprofile.png";
 import TokenRefresher from "../service/TokenRefresher";
