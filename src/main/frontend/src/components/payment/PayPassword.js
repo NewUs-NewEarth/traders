@@ -1,22 +1,23 @@
 /**
  * @author ahrayi
  * @create date 2022-10-23 03:45:27
- * @modify date 2023-10-28 05:29:05
+ * @modify date 2023-10-28 02:55:03
  * @desc 페이비밀번호 입력창
  */
 
 /**
  * @author heera youn
+ * @email [example@mail.com]
  * @create date 2023-10-24 10:12:21
  * @modify date 2023-10-24 11:14:17
- * @desc [송금 페이 자식 모달 비밀번호 입력창 구현 FE + CSS]
+ * @desc [충전 페이 자식 모달 비밀번호 입력창 구현 FE + CSS]
  */
 
 import React, { useEffect, useState } from 'react';
-import { Warn } from '../util/Alert';
 import '../../assets/css/PinNum.css'
+import { Error, Warn } from '../util/Alert';
 
-const PayPasswordWd = ({ onCloseModal,setPayPwd,postWdPayMoney }) => {
+const PayPassword = ({ onCloseModal,setPayPwd,postAddPayMoney}) => {
     const [pin, setPin] = useState('');
 
     useEffect(() => {
@@ -37,10 +38,10 @@ const PayPasswordWd = ({ onCloseModal,setPayPwd,postWdPayMoney }) => {
         if (pin === '') {
             Error('Enter a PIN');
         } else {
-            clearForm();
+            clearForm(); // 처리 후 폼 초기화
             onCloseModal();
-            postWdPayMoney();
-            Warn('결제가 요청되었습니다!');
+            postAddPayMoney();
+            Warn('결제가 요청되었습니다!');            
         }
     };
     // 버튼 배열 생성
@@ -81,4 +82,4 @@ const PayPasswordWd = ({ onCloseModal,setPayPwd,postWdPayMoney }) => {
     );
 };
 
-export default PayPasswordWd;
+export default PayPassword;

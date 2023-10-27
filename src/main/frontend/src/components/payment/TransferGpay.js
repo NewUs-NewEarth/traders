@@ -1,7 +1,7 @@
 /**
  * @author hyunseul
  * @create date 2023-10-24 19:13:49
- * @modify date 2023-10-27 14:55:51
+ * @modify date 2023-10-28 07:29:05
  * @desc [페이지 전체 템플릿 css]
  */
 /**
@@ -28,232 +28,142 @@ import {
 } from "react-router-dom/cjs/react-router-dom.min";
 import { fetchProduct } from "../../assets/js/product";
 import TokenRefresher from "../util/TokenRefresher";
-import { BsDot } from "react-icons/bs";
-import { TextField } from "@material-ui/core";
+import {BsDot} from 'react-icons/bs'
+import PayPasswordTr from "./PayPasswordTr";
+import { fetchPayInfo } from "../../assets/js/payment";
+import PwdModalTR from "./PwdModalTR";
+import { Error, Success } from "../util/Alert";
 
 const TransferGpay = (props) => {
-  const { id } = useParams();
-  const [buyer, setBuyer] = useState();
-  const [product, setProduct] = useState();
-  const [balance, setBalance] = useState();
-  useEffect(() => {
-    fetchProduct(id).then((response) => {
-      if (response) {
-        setProduct(response.data);
-      }
-    });
-    setBuyer(window.user);
+    const { id } = useParams();
+    const [buyer, setBuyer] = useState();
+    const [product, setProduct] = useState();
+    const [balance, setBalance] = useState(null);
+    const [payPwd, setPayPwd] = useState(null);
+    const [showPayPasswordModal, setShowPayPasswordModal] = useState(false);
+    const [showTrModal, setShowTrModal] = useState(false);
 
-    //getBalance();
-    console.log("transfer gpay", product);
-    console.log("buyer", buyer);
-  }, []);
+
+    useEffect(() => {
+        fetchProduct(id).then((response) => {
+          if (response) {
+            setProduct(response.data);
+          }
+        });
+        setBuyer(window.user);
+        
+        //getBalance();
+        fetchPayInfo().then((response)=>{
+          if (response) {
+            setBalance(response.data.payBalance);            
+          }
+        })
+        .catch((error) => {
+          console.error("결제 정보를 가져오는 중 오류 발생:", error);
+        });     
+
+      }, []);
 
   // 그린페이 송금
   const transferPayment = () => {
-    TokenRefresher.post("http://localhost:8080/api/payment/transfer");
-  };
-
-  // 그린페이 잔액 가져오기
-  const getBalance = () => {
-    TokenRefresher.get("http://localhost:8080/api/payment/payMgmt")
-      .then((res) => setBalance(res.data))
-      .catch((error) => {
-        if (error.response) {
-          const errorResponse = error.response.data;
-          console.log(errorResponse);
+    const price = product.price
+    const requestBody = {
+      transferAmt: price,
+      payPwd: payPwd,
+      product: product,
+    }
+    
+    TokenRefresher.post("http://localhost:8080/api/payment/transfer",requestBody)
+      .then((response) => {
+        if (response.status === 200) {
+          const payBalance = response.data.payBalance;
+          setBalance(payBalance);
+          
+          Success("결제 성공");
+        } else {
+          Error("결제 실패");
         }
-      });
+    })
+    .catch((error) => {
+        console.error();
+    });
+  };
+  const handleShowTrModal = () => {
+    setShowTrModal(true);
   };
 
-  const [password, setPassword] = useState("");
-  const [keypadRows, setKeypadRows] = useState([]);
-
-  useEffect(() => {
-    const randomCharacters = shuffleArray([
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-    ]);
-
-    const initialKeypadRows = [
-      ["1", "2", "3", "4"],
-      ["5", "6", "7", "8"],
-      ["C", "9", "0", "←"],
-    ];
-
-    setKeypadRows(initialKeypadRows);
-  }, []); // 빈 의존성 배열을 사용하여 초기 렌더링 시에만 실행
-
-  const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
+  const handleCloseTrModal = () => {
+    setShowTrModal(false);
   };
 
-  const handleClearButtonClick = () => {
-    setPassword("");
-  };
-
-  const handleDeleteButtonClick = () => {
-    setPassword(password.slice(0, -1));
-  };
-
-  const handleKeypadButtonClick = (character) => {
-    setPassword(password + character);
-  };
-
-  function shuffleArray(array) {
-    const shuffledArray = [...array];
-    for (let i = shuffledArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledArray[i], shuffledArray[j]] = [
-        shuffledArray[j],
-        shuffledArray[i],
-      ];
-    }
-    return shuffledArray;
+    const toNextPage=()=>{
+      setShowPayPasswordModal(true)
   }
 
-  function chunkArray(array, size) {
-    const chunkedArray = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunkedArray.push(array.slice(i, i + size));
-    }
-    return chunkedArray;
-  }
-
-  function handleGpayPwd(password) {
-    if (password.length === 6) {
-    } else {
-      Error("❌ 비밀번호는 6자리입니다 ❌");
-    }
-  }
+  const updatePayPwd = (newPayPwd) => {
+    setPayPwd(newPayPwd);
+  };
 
   return (
     <>
+      <br/><br/><br/><br/><br/>
       <Container style={{ width: "1040px" }}>
         {product && (
           <div className="message-container">
             <div className="chat-pay-header">
-              <Col
-                style={{
-                  fontSize: "18pt",
-                  fontWeight: "700",
-                  marginTop: "20px",
-                }}
-              >
-                결제하기
-              </Col>
+              <Col style={{ fontSize: '25pt', fontWeight: '900', marginTop: '30px',display: 'flex', justifyContent:'center' }}>결제하기</Col>
             </div>
-            <hr style={{ marginTop: "30px", marginBottom: "0px" }} />
-            <div style={{ backgroundColor: " #d1d1d1" }}>
-              <div style={{ paddingTop: "30px" }}>
+                <hr style={{ marginTop: '30px', marginBottom: '0px' }} />
+            <div style={{ backgroundColor: ' #d1d1d1' }}>
+              <div style={{ paddingTop: '30px' }}>
+              <div style={{ display: "flex",justifyContent:'center' }}>
                 <div>
-                  <img
-                    src={product.images[0].filepath}
-                    className="chat-pay-product-img"
-                    alt="Product"
-                  ></img>
-                  <span className="chat-product-name">
-                    <BsDot />
-                    상품명: {product.name}
+                  <br/><br/>
+                  <img src={product.images[0].filepath} className="chat-pay-product-img" alt="Product"
+                    style={{
+                            width: "300px",
+                            height: "300px",
+                            objectFit: "cover",
+                          }}></img>
+                </div>
+                <div style={{marginLeft:'30px',display: 'flex', alignItems: 'center'}}>
+                  <span className="chat-product-name" 
+                  style={{ fontSize: '18pt', fontWeight: '700', marginTop: '30px'}}>
+                    <BsDot />상품명: {product.name}<br/>
+                    <BsDot />가격: {product.price} 원
                   </span>
                 </div>
-                <input
-                  type="text"
-                  value={product.price}
-                  className="chat-product-price-input"
-                  readOnly
-                />
-                <span className="chat-product-price">원</span>
+                </div>
                 <br />
-                <span className="chat-product-pay-balance">
-                  그린페이 잔액: {balance} |
+                <span className="chat-product-pay-balance" style={{ fontSize: '18pt', fontWeight: '700', marginTop: '30px',
+                        display: 'flex', justifyContent:'center'}} >
+                  그린페이 잔액: {balance}원
                   {parseInt(product.price) > parseInt(balance)
-                    ? `부족한 금액 ${
-                        product.price - balance
-                      }원이 자동충전되어요`
+                    ? ` | 🪙 부족한 금액 ${product.price - balance}원이 자동충전되어요🪙`
                     : null}
                 </span>
+                <br/><br/><br/>
               </div>
             </div>
+       
+        <Row style={{marginTop:'15px'}}>
+          <button
+            style={{ margin: "auto", width: "200px",backgroundColor:'#198754'}} 
+            className="saveButton-2"
+            id="setGpayPwd"
+            onClick={toNextPage}
+          >
+            송금하기
+          </button>
+        </Row>
 
-            <Row style={{ width: "300px", margin: "auto" }}>
-              <TextField
-                style={{ marginTop: "30px", marginBottom: "30px" }}
-                type="password"
-                id="gpayPwd"
-                maxLength={6}
-                size={6}
-                value={password}
-                onChange={handlePasswordChange}
-                inputProps={{ style: { textAlign: "center" } }}
-                readOnly
-              />
-            </Row>
-
-            <Row style={{ margin: "auto" }}>
-              <div
-                // id="keypad"
-                style={{
-                  margin: "auto",
-                  flexBasis: "content",
-                  width: "50%",
-                  display: "grid",
-                }}
-              >
-                {keypadRows.map((row, rowIndex) => (
-                  <span style={{ float: "left" }}>
-                    <Col key={rowIndex}>
-                      {row.map((character) => (
-                        <button
-                          style={{ justifyContent: "center" }}
-                          className="chat-key__button"
-                          key={character}
-                          onClick={() => {
-                            if (character === "C") {
-                              handleClearButtonClick();
-                            } else if (character === "←") {
-                              handleDeleteButtonClick();
-                            } else {
-                              handleKeypadButtonClick(character);
-                            }
-                          }}
-                        >
-                          {character}
-                        </button>
-                      ))}
-                    </Col>
-                  </span>
-                ))}
-              </div>
-            </Row>
-
-            <Row style={{ marginTop: "15px" }}>
-              <button
-                style={{
-                  margin: "auto",
-                  width: "200px",
-                  backgroundColor: "#198754",
-                }}
-                className="saveButton-2"
-                id="setGpayPwd"
-                onClick={transferPayment}
-              >
-                송금하기
-              </button>
-            </Row>
-          </div>
+        </div>
         )}
 
-        {/* <button onClick={transferPayment}>송금하기</button> */}
       </Container>
+
+      <PwdModalTR showPayPasswordModal={showPayPasswordModal} setShowPayPasswordModal={setShowPayPasswordModal}
+        updatePayPwd={updatePayPwd} transferPayment={transferPayment}/>
     </>
   );
 };

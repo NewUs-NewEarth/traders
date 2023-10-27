@@ -1,7 +1,7 @@
 /**
  * @author heera youn
  * @create date 2023-10-24 11:03:20
- * @modify date 2023-10-25 16:38:09
+ * @modify date 2023-10-28 04:15:55
  * @desc [그린페이 계좌 송금(환급) FE+CSS]
  */
 /**
@@ -13,9 +13,10 @@
 
 import React, { useState } from 'react';
 import { Button, Col, Modal } from 'react-bootstrap';
-import PayPasswordWd from "../payment/PayPasswordWd";
+import PwdModalWd from '../payment/PwdModalWd';
+import { Error } from '../util/Alert';
 
-const WithdrawGpay = ({ setPayPwd, setTransferAmt, bankName, accountNum, payBalance, postWdPayMoney, showModal, handleCloseModal }) => {
+const WithdrawGpay = ({ setPayPwd, setTransferAmt, accountNum, payBalance, postWdPayMoney, showModal, handleCloseModal }) => {
     const [showPayPasswordModal, setShowPayPasswordModal] = useState(false);
     const [counter, setCounter] = useState(0);
     
@@ -31,10 +32,6 @@ const WithdrawGpay = ({ setPayPwd, setTransferAmt, bankName, accountNum, payBala
             setCounter(counter * 10 + parseInt(number));
         }
     }
-      
-    function onClick() {
-        setCounter(counter+1);
-    }
 
     const inputPriceFormat = (str) => {
         const comma = (str) => {
@@ -49,8 +46,20 @@ const WithdrawGpay = ({ setPayPwd, setTransferAmt, bankName, accountNum, payBala
       };
 
     const toNextPage=()=>{
-        setTransferAmt(counter)
-        setShowPayPasswordModal(true)
+        const inputAmount = counter;
+        if (inputAmount === 0) {
+            Error("금액을 입력하세요.");
+            return;
+        }
+        if (inputAmount <= payBalance) {
+            setTransferAmt(inputAmount);
+            setShowPayPasswordModal(true);
+        } else {
+            // Counter 값이 PayBalance를 초과하는 경우
+            Error("잔액을 초과할 수 없습니다.");
+            setCounter(payBalance);
+            setTransferAmt(payBalance);
+        }
     }
       
     return (
@@ -66,7 +75,6 @@ const WithdrawGpay = ({ setPayPwd, setTransferAmt, bankName, accountNum, payBala
                     내 계좌로 송금하실 금액을 입력해주세요.
                 </p>
                 <p style={{textAlign:'center'}} className='allterms'>
-                    {bankName} {accountNum}
                 </p>
                 
                 <p className='titleterms' style={{ textAlign: 'center' }}>
@@ -133,27 +141,8 @@ const WithdrawGpay = ({ setPayPwd, setTransferAmt, bankName, accountNum, payBala
             
             </Modal>
 
-            {showPayPasswordModal && (
-                <Modal
-                className='basefont'
-                show={showPayPasswordModal} 
-                onHide={() => {
-                setShowPayPasswordModal(false)
-                handleCloseModal();
-                }} centered>
-                    <Modal.Header closeButton>
-                        <Modal.Title className="text-center w-100 title" 
-                        style={{marginLeft:'5px'}}>&nbsp;&nbsp;그린페이 비밀번호 입력
-                    </Modal.Title>
-                    </Modal.Header>
-                    
-                        <Modal.Body>
-                            <PayPasswordWd setPayPwd={setPayPwd} postWdPayMoney={postWdPayMoney} onCloseModal={() => {
-                                setShowPayPasswordModal(false)
-                                handleCloseModal();}}/>
-                        </Modal.Body>
-                </Modal>
-            )}
+            <PwdModalWd setPayPwd={setPayPwd} showPayPasswordModal={showPayPasswordModal} setShowPayPasswordModal={setShowPayPasswordModal} postWdPayMoney={postWdPayMoney} handleCloseModal={handleCloseModal}/>
+        
         </div>
             
     );

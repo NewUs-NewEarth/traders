@@ -1,7 +1,7 @@
 /**
  * @author heera youn
  * @create date 2023-10-18 21:57:51
- * @modify date 2023-10-27 14:29:44
+ * @modify date 2023-10-28 06:43:41
  * @desc [그린페이 가입절차 시작]
  */
 
@@ -85,7 +85,7 @@ const GreenPay = () => {
       </Row>
 
       <Row style={{ marginLeft: "800px", textAlign: "center", margin: "auto" }}>
-        <Link to="/">
+        <Link to="/payment/gpay_register">
           <button className="saveButton-3" style={{ justifyContent: "center" }}>
             가입하기
           </button>

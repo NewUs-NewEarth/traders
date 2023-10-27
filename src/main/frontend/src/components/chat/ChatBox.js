@@ -1,7 +1,7 @@
 /**
  * @author hyunseul
  * @create date 2023-10-04 13:02:02
- * @modify date 2023-10-27 14:31:44
+ * @modify date 2023-10-28 06:55:04
  */
 
 /**
@@ -202,8 +202,7 @@ const ChatBox = (props) => {
   };
 
   const handleCardClick = () => {
-    // history.push(`../../payment/transfer/${productId}`);
-    history.push("/");
+    history.push(`../../payment/transfer/${productId}`);
   };
   const fetchPrevMessage = async () => {
     try {

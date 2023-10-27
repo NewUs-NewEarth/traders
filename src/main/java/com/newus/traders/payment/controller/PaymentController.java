@@ -12,12 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -39,12 +37,10 @@ import com.newus.traders.payment.dto.WithdrawResponseDto;
 import com.newus.traders.payment.entity.PayAccount;
 import com.newus.traders.payment.entity.Payment;
 import com.newus.traders.payment.entity.TransactionHistory;
-import com.newus.traders.payment.repository.TransactionHistoryRepository;
 import com.newus.traders.payment.service.PaymentService;
 import com.newus.traders.payment.service.RestTemplateService;
 import com.newus.traders.product.dto.ProductDto;
 import com.newus.traders.product.service.ProductService;
-import com.newus.traders.user.jwt.TokenProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,23 +52,20 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final ProductService productService;
     private final RestTemplateService restTemplateService;
-    private final TokenProvider tokenProvider;
 
-    @Autowired
-    private TransactionHistoryRepository transactionHistoryRepository;
+    // 회원 등급 판별(0:페이 미가입, 1:계좌 미등록, 2:계좌 등록)
+    @GetMapping("/payment/payLanding")
+    public ResponseEntity<?> getMemberGrade(@RequestHeader("token") String accessToken) {
+        int memberGrade = paymentService.getMemberGrade(accessToken);
+
+        return ResponseEntity.ok(memberGrade);
+    }
 
     // 최초등록
     @Transactional
     @PostMapping("/payment/register")
     public ResponseEntity<?> registerData(@RequestBody PaymentDto paymentDto,
             @RequestHeader("token") String accessToken) {
-
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String userName = userDetails.getUsername();
-        System.out.println("최초등록 - 토큰에서 추출한 nickName: " + userName);
-        //
 
         // 사용자인증
         RegisterResponseDto rr = restTemplateService.authorizeUser(paymentDto);
@@ -90,7 +83,7 @@ public class PaymentController {
         paymentDto.setExpiresIn(paymentService.getExpirationDate(tr.getExpires_in()));
         paymentDto.setUserCi(restTemplateService.getCi(tr.getUser_seq_no()));
 
-        paymentService.savePaymentDtoToDb(paymentDto, userName);
+        paymentService.savePaymentDtoToDb(paymentDto, accessToken);
 
         return new ResponseEntity<>(Collections.singletonMap("message", "결제가 성공적으로 등록되었습니다."), HttpStatus.OK);
     }
@@ -101,25 +94,14 @@ public class PaymentController {
     public ResponseEntity<?> checkValidAccount(@RequestBody PayAccountDto payAccountDto,
             @RequestHeader("token") String accessToken) {
 
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
-        System.out.println("유효계좌확인 - 토큰에서 추출한 nickName: " + nickName);
-        //
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
-        Optional<Payment> payment = paymentService.getPaymentInfo(clientInfo);
-
+        Optional<Payment> payment = paymentService.getPaymentInfo(accessToken);
         String userName = payment.get().getUserName();
 
-        payAccountDto.setClientInfo(clientInfo);
+        payAccountDto.setClientInfo(payment.get().getClientInfo());
         payAccountDto.setUserName(userName);
 
-        System.out.println(payAccountDto.toString());
         // 수취조회
         InquiryRcvResponseDto irr = restTemplateService.receiveInquiry(payAccountDto, "AU", 1);
-
-        System.out.println(irr.toString());
 
         if (irr.getRsp_code().equals("A0000") && irr.getBank_rsp_code().equals("000")) {
             int ranNum = restTemplateService.generateRandomNum();
@@ -133,7 +115,6 @@ public class PaymentController {
                 return new ResponseEntity<>(responseMap, HttpStatus.OK);
             }
             return new ResponseEntity<>(Collections.singletonMap("message", "인증 송금 실패"), HttpStatus.BAD_REQUEST);
-
         }
         return new ResponseEntity<>(Collections.singletonMap("message", "유효하지 않은 계좌입니다."), HttpStatus.BAD_REQUEST);
     }
@@ -144,16 +125,9 @@ public class PaymentController {
     public ResponseEntity<?> savePayAccount(@RequestBody PayAccountDto payAccountDto,
             @RequestHeader("token") String accessToken) {
 
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);// 토큰이용 정보추출
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String userName = userDetails.getUsername();
-        System.out.println(userDetails.getUsername());
-        //
-
         // ClientInfo 추출
-        Long clientInfo = paymentService.getClientInfo(userName).get();
-        Payment payment = paymentService.getPaymentInfo(clientInfo).get();
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
+        Payment payment = paymentService.getPaymentInfo(accessToken).get();
 
         // 그린페이 가입 상태 확인
         if (!(paymentService.checkPayMember(clientInfo))) {
@@ -161,11 +135,8 @@ public class PaymentController {
         } else if (paymentService.checkAccntMember(clientInfo)) {
             // 계좌등록여부 확인 -> 이미 등록된 계좌가 있습니다. 확인 -> 계좌정보로 이동.
         }
-
         payAccountDto.setClientInfo(clientInfo);
         payAccountDto.setUserName(payment.getUserName());
-
-        System.out.println(payAccountDto.toString());
 
         paymentService.savePayAccountDtoToDb(payAccountDto);
 
@@ -178,16 +149,10 @@ public class PaymentController {
     @Transactional
     @PostMapping(value = "/payment/sms")
     public ResponseEntity<?> sendSms(@RequestBody Map<String, String> requestBody) {
-
-        System.out.println(requestBody.toString());
-
         String rphone = requestBody.get("rphone");
-        System.out.println(rphone);
         try {
 
-            System.out.println(rphone);
             paymentService.sendSms(rphone);
-            System.out.println(rphone);
 
             return new ResponseEntity<>(Collections.singletonMap("message", "문자 발송 성공"), HttpStatus.OK);
         } catch (Exception e) {
@@ -200,13 +165,10 @@ public class PaymentController {
     @Transactional
     @PostMapping(value = "/payment/verify-sms")
     public ResponseEntity<?> verifySms(@RequestBody Map<String, String> requestBody) {
-        System.out.println(requestBody.toString());
 
         try {
             String rphone = requestBody.get("rphone");
-            System.out.println("controller: " + rphone);
             String inputAuthNum = requestBody.get("inputAuthNum");
-            System.out.println("controller: " + inputAuthNum);
 
             if (paymentService.verifyAuthNum(rphone, inputAuthNum)) {
                 return new ResponseEntity<>(Collections.singletonMap("message", "문자 인증 성공"), HttpStatus.OK);
@@ -224,19 +186,10 @@ public class PaymentController {
     @PostMapping(value = "/payment/payMgmt")
     public ResponseEntity<?> getPayinfo(@RequestHeader("token") String accessToken) {
         // header: nickName
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
-        System.out.println("유효계좌확인 - 토큰에서 추출한 nickName: " + nickName);
-        //
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
-
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
         try {
             // response: 계좌번호, 은행번호, 닉네임, 페이잔액
             PayAccount payAccount = paymentService.getPayAccountInfo(clientInfo).get();
-
-            System.out.println(payAccount.toString());
 
             return new ResponseEntity<>(payAccount, HttpStatus.OK);
 
@@ -252,20 +205,12 @@ public class PaymentController {
     public ResponseEntity<?> addPayMoney(@RequestBody TransferDto transferDto,
             @RequestHeader("token") String accessToken) {
         // header: nickName, body: 충전금액, 페이비밀번호
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
-        System.out.println("유효계좌확인 - 토큰에서 추출한 nickName: " + nickName);
-        //
-        // userName -> 유저정보 추출
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
-        Payment payment = paymentService.getPaymentInfo(clientInfo).get();
-        PayAccount payAccount = paymentService.getPayAccountInfo(clientInfo).get();
-        // 페이비밀번호 대조 후 (불일치 시 예외 처리)
-        System.out.println("받은비번" + transferDto.getPayPwd());
-        System.out.println("내비번" + payment.getPayPassword());
 
+        // 유저정보 추출
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
+        Payment payment = paymentService.getPaymentInfo(accessToken).get();
+        PayAccount payAccount = paymentService.getPayAccountInfo(accessToken).get();
+        // 페이비밀번호 대조 후 (불일치 시 예외 처리
         if (transferDto.getPayPwd().isEmpty() || !(transferDto.getPayPwd().equals(payment.getPayPassword()))) {
             System.out.println("비번 불일치");
             throw new CustomException(ErrorCode.PASSWORD_NOT_MATCHED);
@@ -282,8 +227,6 @@ public class PaymentController {
 
                 WithdrawResponseDto withdrawResponseDto = restTemplateService.transferWithdraw(withdrawRequestDto,
                         payment, payAccount);
-
-                System.out.println("응답코드:" + withdrawResponseDto.getRsp_code());
 
                 // api 정상 처리되면 payAccount의 paybalance + 처리,
                 if (withdrawResponseDto.getRsp_code().equals("A0000")) {
@@ -318,21 +261,12 @@ public class PaymentController {
     public ResponseEntity<?> withdrawPayMoney(@RequestBody TransferDto transferDto,
             @RequestHeader("token") String accessToken) {
         // header: nickName, body: 인출금액, 페이비밀번호
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
-        System.out.println("유효계좌확인 - 토큰에서 추출한 nickName: " + nickName);
-        //
-        // userName -> 유저정보 추출
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
-        Payment payment = paymentService.getPaymentInfo(clientInfo).get();
-        PayAccount payAccount = paymentService.getPayAccountInfo(clientInfo).get();
+        // 유저정보 추출
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
+        Payment payment = paymentService.getPaymentInfo(accessToken).get();
+        PayAccount payAccount = paymentService.getPayAccountInfo(accessToken).get();
 
         // 페이비밀번호 대조 후 (불일치 시 예외 처리)
-        System.out.println("받은비번" + transferDto.getPayPwd());
-        System.out.println("내비번" + payment.getPayPassword());
-
         if (transferDto.getPayPwd().isEmpty() || !(transferDto.getPayPwd().equals(payment.getPayPassword()))) {
             System.out.println("비번 불일치");
             throw new CustomException(ErrorCode.PASSWORD_NOT_MATCHED);
@@ -344,7 +278,6 @@ public class PaymentController {
                 // 입금(TR)
                 DepositResponseDto depositResponseDto = restTemplateService.transferDeposit(payAccount, "TR",
                         transferDto.getTransferAmt());
-                System.out.println("응답코드:" + depositResponseDto.getRsp_code());
 
                 // api 정상 처리되면 payAccount의 paybalance - 처리,
                 if (depositResponseDto.getRsp_code().equals("A0000")) {
@@ -376,24 +309,17 @@ public class PaymentController {
     public ResponseEntity<?> transferPayMoney(@RequestBody TransferDto transferDto,
             @RequestHeader("token") String accessToken) {
         // header: nickname, body: 판매자nickname(|| id), payPassword, tranAmt, prpduct
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
 
-        // userName -> 유저정보 추출
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
-        // 구매자 clientInfo도 필요@@@@@@@@@@
-        Payment payment = paymentService.getPaymentInfo(clientInfo).get();
-        PayAccount payAccount = paymentService.getPayAccountInfo(clientInfo).get();
+        // 구매자 정보
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
+        Payment payment = paymentService.getPaymentInfo(accessToken).get();
+        PayAccount payAccount = paymentService.getPayAccountInfo(accessToken).get();
+        // 판매자 정보
         ProductDto product = transferDto.getProduct();
-        Long sellerClientInfo = paymentService.getClientInfo(product.getSeller()).get();
+        Long sellerClientInfo = paymentService.getClientInfoByNickName(product.getSeller()).get();
         PayAccount sellerPayAccount = paymentService.getPayAccountInfo(sellerClientInfo).get();
 
         // 페이비밀번호 대조 후 (불일치 시 예외 처리)
-        System.out.println("받은비번" + transferDto.getPayPwd());
-        System.out.println("내비번" + payment.getPayPassword());
-
         if (transferDto.getPayPwd().isEmpty() || !(transferDto.getPayPwd().equals(payment.getPayPassword()))) {
             System.out.println("비번 불일치");
             throw new CustomException(ErrorCode.PASSWORD_NOT_MATCHED);
@@ -411,8 +337,6 @@ public class PaymentController {
 
                 WithdrawResponseDto withdrawResponseDto = restTemplateService.transferWithdraw(withdrawRequestDto,
                         payment, payAccount);
-
-                System.out.println("응답코드:" + withdrawResponseDto.getRsp_code());
 
                 // api 정상 처리되면 payAccount의 paybalance + 처리,
                 if (withdrawResponseDto.getRsp_code().equals("A0000")) {
@@ -434,7 +358,6 @@ public class PaymentController {
             // 입금(TR)
             DepositResponseDto depositResponseDto = restTemplateService.transferDeposit(sellerPayAccount, "TR",
                     transferDto.getTransferAmt(), product);
-            System.out.println("응답코드:" + depositResponseDto.getRsp_code());
 
             // api 정상 처리되면
             if (depositResponseDto.getRsp_code().equals("A0000")) {
@@ -465,7 +388,6 @@ public class PaymentController {
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
         productService.updateAfterTransaction(product, clientInfo);
 
         // 응답 반환
@@ -475,13 +397,8 @@ public class PaymentController {
     // 거래 내역 조회
     @PostMapping("/payment/transactionHistory")
     public ResponseEntity<List<TransactionHistory>> getTransactionHistory(@RequestHeader("token") String accessToken) {
-        Authentication authentication = tokenProvider.getAuthentication(accessToken);
-        Object principal = authentication.getPrincipal();
-        UserDetails userDetails = (UserDetails) principal;
-        String nickName = userDetails.getUsername();
-
         // userName -> 유저정보 추출
-        Long clientInfo = paymentService.getClientInfo(nickName).get();
+        Long clientInfo = paymentService.getClientInfo(accessToken).get();
         try {
             List<TransactionHistory> transactionHistoryDto = paymentService.getTransactionHistory(clientInfo);
             if (transactionHistoryDto.isEmpty()) {

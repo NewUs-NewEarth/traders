@@ -14,13 +14,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import com.newus.traders.chat.document.ChatDto;
-import com.newus.traders.chat.repository.ChatRepository;
 import com.newus.traders.exception.CustomException;
 import com.newus.traders.exception.ErrorCode;
 import com.newus.traders.payment.dto.PayAccountDto;
@@ -32,12 +30,15 @@ import com.newus.traders.payment.entity.TransactionHistory;
 import com.newus.traders.payment.repository.PayAccountRepository;
 import com.newus.traders.payment.repository.PaymentRepository;
 import com.newus.traders.payment.repository.TransactionHistoryRepository;
-import com.newus.traders.product.dto.ProductDto;
-import com.newus.traders.product.service.ProductService;
 import com.newus.traders.user.entity.User;
+import com.newus.traders.user.jwt.TokenProvider;
 import com.newus.traders.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import net.nurigo.sdk.NurigoApp;
+import net.nurigo.sdk.message.exception.NurigoMessageNotReceivedException;
+import net.nurigo.sdk.message.model.Message;
+import net.nurigo.sdk.message.service.DefaultMessageService;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +47,7 @@ public class PaymentService {
     private final PayAccountRepository payAccountRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
     private final UserRepository userRepository;
+    private final TokenProvider tokenProvider;
     private ConcurrentHashMap<String, String> authNums = new ConcurrentHashMap<>();
 
     @Value("${sms.api_key}")
@@ -55,27 +57,53 @@ public class PaymentService {
     @Value("${sms.sphone}")
     private String sphone;
 
-    // 토큰 userName으로 clientInfo 추출
-    public Optional<Long> getClientInfo(String userName) {
-        Optional<User> user = userRepository.findByUsername(userName);
+    // 토큰으로 clientInfo 추출
+    public Optional<Long> getClientInfo(String accessToken) {
+        Authentication authentication = tokenProvider.getAuthentication(accessToken);
+        Object principal = authentication.getPrincipal();
+        UserDetails userDetails = (UserDetails) principal;
+        String nickName = userDetails.getUsername();
+
+        Optional<User> user = userRepository.findByUsername(nickName);
 
         if (user.isPresent()) {
             Long clientInfo = user.get().getUserId();
-            System.out.println("서비스Long: " + clientInfo);
             return Optional.of(clientInfo);
         } else {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
     }
 
-    // clientInfo로 Payment 정보 반환
-    public Optional<Payment> getPaymentInfo(Long clientInfo) {
-        Optional<Payment> payment = paymentRepository.findByClientInfo(clientInfo);
+    public Optional<Long> getClientInfoByNickName(String nickName) {
+        Optional<User> user = userRepository.findByUsername(nickName);
+
+        if (user.isPresent()) {
+            Long clientInfo = user.get().getUserId();
+            return Optional.of(clientInfo);
+        } else {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    // accessToken로 Payment 정보 반환
+    public Optional<Payment> getPaymentInfo(String accessToken) {
+        Optional<Payment> payment = paymentRepository.findByClientInfo(getClientInfo(accessToken).get());
 
         if (!payment.isPresent()) {
             throw new CustomException(ErrorCode.PAYMENT_NOT_FOUND);
         } else {
             return payment;
+        }
+    }
+
+    // accessToken으로 PayAccount 정보 반환
+    public Optional<PayAccount> getPayAccountInfo(String accessToken) {
+        Optional<PayAccount> payAccount = payAccountRepository.findByClientInfo(getClientInfo(accessToken).get());
+
+        if (!payAccount.isPresent()) {
+            throw new CustomException(ErrorCode.PAYACCOUNT_NOT_FOUND);
+        } else {
+            return payAccount;
         }
     }
 
@@ -110,6 +138,18 @@ public class PaymentService {
         }
     }
 
+    // 회원 등급 판별(0:페이 미가입, 1:계좌 미등록, 2:계좌 등록)
+    public int getMemberGrade(String accessToken) {
+        Long clientInfo = getClientInfo(accessToken).get();
+
+        if (checkAccntMember(clientInfo)) {
+            return 2;
+        } else if (checkPayMember(clientInfo)) {
+            return 1;
+        }
+        return 0;
+    }
+
     // 사용자인증타입(auth_type) 판별(최초등록:0, 재인증:2)
     public int getAuthType(Long clientInfo) {
         Optional<Payment> optionalPayment = paymentRepository.findById(clientInfo);
@@ -122,10 +162,10 @@ public class PaymentService {
 
     // 페이 신규 등록
     @Transactional
-    public Payment savePaymentDtoToDb(PaymentDto paymentDto, String userName) {
+    public Payment savePaymentDtoToDb(PaymentDto paymentDto, String accessToken) {
 
         Payment payment = new Payment();
-        payment.setClientInfo(getClientInfo(userName).get());
+        payment.setClientInfo(getClientInfo(accessToken).get());
         payment.setUserName(paymentDto.getUserName());
         payment.setUserInfo(paymentDto.getUserInfo());
         payment.setUserGender(paymentDto.getUserGender());
@@ -180,12 +220,6 @@ public class PaymentService {
         // buyer 또는 seller와 clientInfo를 비교하여 필터링
         List<TransactionHistory> filteredTransactions = transactionHistoryRepository.findByBuyerOrSeller(clientInfo,
                 clientInfo);
-        // 날짜 내림차순으로 정렬
-        // filteredTransactions.sort(Comparator.comparing(TransactionHistory::getTransactionDtime).reversed());
-
-        if (filteredTransactions.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "건에 대한 거래 내역을 찾을 수 없습니다");
-        }
         return filteredTransactions;
     }
 
@@ -195,24 +229,24 @@ public class PaymentService {
         String authNum = getSmsAuthNum();
         authNums.put(rphone, authNum);
         System.out.println("@@@@@@인증번호@@@@@@ " + authNum);
-        // DefaultMessageService messageService = NurigoApp.INSTANCE.initialize(apiKey,
-        // apiSecret,
-        // "https://api.solapi.com");
+        DefaultMessageService messageService = NurigoApp.INSTANCE.initialize(apiKey,
+                apiSecret,
+                "https://api.solapi.com");
 
-        // Message message = new Message();
-        // message.setFrom(sphone);
-        // message.setTo(rphone);
-        // message.setText("[TRADERS]\n" + "인증번호는 " + authNum + "입니다.");
+        Message message = new Message();
+        message.setFrom(sphone);
+        message.setTo(rphone);
+        message.setText("[TRADERS]\n" + "인증번호는 " + authNum + "입니다.");
 
-        // try {
-        // messageService.send(message);
-        // } catch (NurigoMessageNotReceivedException exception) {
-        // // 발송 실패한 메시지 확인
-        // System.out.println(exception.getFailedMessageList());
-        // System.out.println(exception.getMessage());
-        // } catch (Exception exception) {
-        // System.out.println(exception.getMessage());
-        // }
+        try {
+            messageService.send(message);
+        } catch (NurigoMessageNotReceivedException exception) {
+            // 발송 실패한 메시지 확인
+            System.out.println(exception.getFailedMessageList());
+            System.out.println(exception.getMessage());
+        } catch (Exception exception) {
+            System.out.println(exception.getMessage());
+        }
     }
 
     // 문자인증번호 일치 확인
@@ -248,6 +282,7 @@ public class PaymentService {
         return verNum;
     }
 
+    // 출석체크 포인트 지급
     public void addBalanceForAttendance(String userName, int pointAmt) {
         Long clientInfo = getClientInfo(userName).get();
         PayAccount payAccount = getPayAccountInfo(clientInfo).get();
@@ -264,7 +299,5 @@ public class PaymentService {
 
         saveTransactionHistoryToDb(transactionHistoryDto);
     }
-
-   
 
 }

@@ -29,8 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.newus.traders.exception.CustomException;
-import com.newus.traders.exception.ErrorCode;
 import com.newus.traders.payment.dto.DepositRequestDto;
 import com.newus.traders.payment.dto.DepositResponseDto;
 import com.newus.traders.payment.dto.InquiryRcvRequestDto;
@@ -100,9 +98,6 @@ public class RestTemplateService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<RegisterResponseDto> result = restTemplate.getForEntity(uri, RegisterResponseDto.class);
 
-        System.out.println("상태코드: " + result.getStatusCode());
-        System.out.println("응답내용" + result.getBody());
-
         // {재인증(authtype==2) 시 headers추가}
         return result.getBody();
     }
@@ -117,16 +112,12 @@ public class RestTemplateService {
                 .build()
                 .toUri();
 
-        System.out.println(uri);
-
         TokenRequestDto request = new TokenRequestDto();
         request.setCode(code);
         request.setClient_id(clientId);
         request.setClient_secret(clientSecret);
         request.setRedirect_uri("http://localhost:8080/api/payment/register2");
         request.setGrant_type("authorization_code");
-
-        System.out.println(request.toString());
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<TokenResponseDto> response = restTemplate.postForEntity(uri, request, TokenResponseDto.class);
@@ -145,21 +136,14 @@ public class RestTemplateService {
                     .build()
                     .toUri();
 
-            System.out.println(uri.toString());
-
             Map<String, String> headers = new HashMap<>();
             headers.put("Authorization", "Bearer " + accessToken);
 
             HttpEntity<?> entity = new HttpEntity<Object>(headers);
 
-            System.out.println(entity.toString());
-
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<MeResponseDto> result = restTemplate.exchange(uri, HttpMethod.GET, entity,
                     MeResponseDto.class);
-
-            System.out.println(result.getStatusCode());
-            System.out.println(result.getBody());
 
             return result.getBody();
 
@@ -214,9 +198,6 @@ public class RestTemplateService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<InquiryRcvResponseDto> response = restTemplate.exchange(requestEntity,
                 InquiryRcvResponseDto.class);
-
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getBody());
 
         return response.getBody();
     }
@@ -274,9 +255,6 @@ public class RestTemplateService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<DepositResponseDto> response = restTemplate.exchange(requestEntity, DepositResponseDto.class);
 
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getBody());
-
         return response.getBody();
     }
 
@@ -327,9 +305,6 @@ public class RestTemplateService {
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<DepositResponseDto> response = restTemplate.exchange(requestEntity, DepositResponseDto.class);
-
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getBody());
 
         return response.getBody();
     }
@@ -383,9 +358,6 @@ public class RestTemplateService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<DepositResponseDto> response = restTemplate.exchange(requestEntity, DepositResponseDto.class);
 
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getBody());
-
         return response.getBody();
     }
 
@@ -424,9 +396,6 @@ public class RestTemplateService {
         ResponseEntity<WithdrawResponseDto> response = restTemplate.exchange(requestEntity,
                 WithdrawResponseDto.class);
 
-        System.out.println(response.getStatusCode());
-        System.out.println("충전금액: " + response.getBody().getTran_amt());
-
         return response.getBody();
     }
 
@@ -454,8 +423,6 @@ public class RestTemplateService {
                 .limit(targetStringLength)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
-
-        System.out.println(generatedString);
 
         // 거래고유번호 유일성체크 및 저장(1d)
 
@@ -488,31 +455,5 @@ public class RestTemplateService {
 
         return new String(encodeByte);
     }
-
-    // token생성(JWT)
-    // header: {
-    // "alg": "HS256",
-    // "typ": "JWT"
-    // }
-    // payload: {
-    // "aud": "1101038310",
-    // "scope": [
-    // "inquiry",
-    // "login",
-    // "transfer"
-    // ],
-    // "iss": "https://www.openbanking.or.kr",
-    // "exp": 1702790965,
-    // "jti": "6d827086-df35-42c3-a7ee-bb9a0f27caba"
-    // }
-    // signature:
-    // HMACSHA256(
-    // base64UrlEncode(header) + "." +
-    // base64UrlEncode(payload),
-    // tRaders-make_3arth-b3tt3r
-
-    // refresh token은 exp값이 10일 더 길고, secretkey: nuus-make-3arth-b3tt3r
-
-    // )
 
 }
