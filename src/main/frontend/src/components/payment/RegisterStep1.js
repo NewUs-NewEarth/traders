@@ -1,11 +1,12 @@
 /**
  * @author heera youn
  * @create date 2023-10-25 13:59:36
- * @modify date 2023-10-27 11:52:13
+ * @modify date 2023-10-30 15:42:13
  * @desc [그린페이 가입 인증 및 input FE]
  */
 /**
  * @author ahrayi
+ * 
  * @create date 2023-09-26 10:32:10
  * @modify date 2023-10-21 10:33:55
  * 그린페이 가입 - 1. 인증정보input 및 약관동의 처리
@@ -18,6 +19,7 @@ import { Grid, Container, Typography } from "@material-ui/core";
 import { useForm } from "react-hook-form";
 import { CustomTextField } from "../../styles/styles";
 import { Row } from "react-bootstrap";
+import { Error } from "../util/Alert";
 
 const RegisterStep1 = ({ form, onText, onNext }) => {
   const {
@@ -48,12 +50,38 @@ const RegisterStep1 = ({ form, onText, onNext }) => {
       cellCarrier === "" ||
       userCellNo === ""
     ) {
-      alert("모든 항목을 작성해주세요."); // 유효성 검사 추가
-      // 이름(한글20) userInfo(숫자6) userGender(숫자1) userCellNo(숫자11)
+      alert("모든 항목을 작성해주세요.");
     } else {
-      onNext();
+      if (validateData()) {
+        onNext();
+      } else {
+        Error("입력값이 올바르지 않습니다.");
+      }
     }
   };
+
+  function validateData() {
+    const userNameRegex = /^[가-힣]{1,20}$/;
+    const userInfoRegex = /^[0-9]{6}$/;
+    const userGenderRegex = /^[0-9]{1}$/;
+    const userCellNoRegex = /^[0-9]{11}$/;
+    if (!userName.match(userNameRegex)) {
+      return false;
+    }
+    
+    if (!userInfo.match(userInfoRegex)) {
+      return false;
+    }
+
+    if (!userGender.match(userGenderRegex)) {
+      return false;
+    }
+
+    if (!userCellNo.match(userCellNoRegex)) {
+      return false;
+    }
+    return true;
+  }
 
   return (
     <Container component="main" maxWidth="xs" style={{ marginTop: "180px" }}>
@@ -87,6 +115,7 @@ const RegisterStep1 = ({ form, onText, onNext }) => {
             bordercolor="green"
             autoFocus
             onChange={onText}
+            inputProps={{ maxLength: 20, pattern: "^[가-힣]{1,20}$" }}
           />
         </Grid>
 
@@ -105,7 +134,9 @@ const RegisterStep1 = ({ form, onText, onNext }) => {
                 size={6}
                 onChange={onText}
                 bordercolor="green"
+                inputProps={{ maxLength: 6, pattern: "^[0-9]{6}$" }}
               />
+              
             </Grid>
             <text style={{ fontSize: "36px", verticalAlign: "middle" }}>
               &nbsp;&nbsp;-&nbsp;&nbsp;
@@ -123,6 +154,7 @@ const RegisterStep1 = ({ form, onText, onNext }) => {
                 maxLength={1}
                 size={1}
                 onChange={onText}
+                inputProps={{ maxLength: 1, pattern: "^[0-9]{1}$" }}
               />
             </Grid>
             <text style={{ fontSize: "36px", verticalAlign: "middle" }}>
@@ -165,6 +197,7 @@ const RegisterStep1 = ({ form, onText, onNext }) => {
                 value={userCellNo}
                 label="휴대폰 번호를 입력하세요"
                 onChange={onText}
+                inputProps={{ maxLength: 11, pattern: "^[0-9]{11}$" }}
               />
             </Grid>
           </Grid>
