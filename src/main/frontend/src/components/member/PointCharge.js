@@ -1,25 +1,23 @@
 /**
  * @author heera youn
  * @create date 2023-10-22 23:27:59
- * @modify date 2023-10-25 16:34:51
+ * @modify date 2023-10-28 04:16:29
  * @desc [그린페이 충전 및 환급 모달 페이지]
- * 닫기 버튼 누를경우 이중 모달 창 모두 닫힘 수정
+ * 부모, 자식 모달 창 모두 닫히게 수정
  */
+
 import React, { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import '../../assets/css/ChatMapModal.css';
 import { Col } from 'react-bootstrap';
-import PayPassword from './PayPassword';
+import PwdModalCharge from '../payment/PwdModalCharge';
+import { Error } from '../util/Alert';
 
 
 const PointCharge = ({ setPayPwd, setTransferAmt, postAddPayMoney, showModal, handleCloseModal }) => {
     const [showPayPasswordModal, setShowPayPasswordModal] = useState(false);
     const [counter, setCounter] = useState(0);
-
-    useEffect =()=>{
-        
-    }
     
     const handleClosePayPasswordModal = () => {
         setShowPayPasswordModal(false);
@@ -37,10 +35,6 @@ const PointCharge = ({ setPayPwd, setTransferAmt, postAddPayMoney, showModal, ha
             setCounter(counter * 10 + parseInt(number));
         }
     }
-      
-    function onClick() {
-        setCounter(counter+1);
-    }
 
     const inputPriceFormat = (str) => {
         const comma = (str) => {
@@ -55,8 +49,20 @@ const PointCharge = ({ setPayPwd, setTransferAmt, postAddPayMoney, showModal, ha
       };
 
     const toNextPage=()=>{
-        setTransferAmt(counter)
-        setShowPayPasswordModal(true)
+        const inputAmount = counter;
+        if (inputAmount === 0) {
+            Error("금액을 입력하세요.");
+            return;
+        }
+        
+        if (inputAmount <= 2000000) {
+            setTransferAmt(inputAmount);
+            setShowPayPasswordModal(true);
+        } else {
+            Error("200만 원을 초과할 수 없습니다.");
+            setCounter(2000000);
+            setTransferAmt(2000000);
+        }
     }
 
     return (
@@ -117,8 +123,7 @@ const PointCharge = ({ setPayPwd, setTransferAmt, postAddPayMoney, showModal, ha
                     <button onClick={() => handleNumberClick("delete")}
                     className='paybutton'>←</button>
                 </div>
-                </div>  
-                
+                </div>    
             </Modal.Body>
 
             <Modal.Footer>
@@ -129,30 +134,10 @@ const PointCharge = ({ setPayPwd, setTransferAmt, postAddPayMoney, showModal, ha
                 onClick={toNextPage}>충전</Button>
             </Modal.Footer>
     </Modal>  
+
+    <PwdModalCharge showPayPasswordModal={showPayPasswordModal} setShowPayPasswordModal={setShowPayPasswordModal} setPayPwd={setPayPwd} postAddPayMoney={postAddPayMoney}
+    handleCloseModal={handleCloseModal}/>
     
-    {showPayPasswordModal && (
-                <Modal
-                className='basefont'
-                show={showPayPasswordModal}
-                setPayPwd={setPayPwd}
-                postAddPayMoney={postAddPayMoney}
-                onHide={() => {
-                setShowPayPasswordModal(false)
-                handleCloseModal();
-                }} centered>
-                    <Modal.Header closeButton>
-                        <Modal.Title className="text-center w-100 title" 
-                        style={{marginLeft:'5px'}}>&nbsp;&nbsp;그린페이 비밀번호 입력
-                    </Modal.Title>
-                    </Modal.Header>
-                    
-                        <Modal.Body>
-                            <PayPassword setPayPwd={setPayPwd} postAddPayMoney={postAddPayMoney} onCloseModal={() => {
-                                setShowPayPasswordModal(false)
-                                handleCloseModal();}}/>
-                        </Modal.Body>
-                </Modal>
-            )}
         </div>
     );
 };

@@ -1,7 +1,7 @@
 /**
  * @author heera youn
  * @create date 2023-10-22 23:28:10
- * @modify date 2023-10-27 11:56:26
+ * @modify date 2023-10-28 05:30:13
  * @desc 등록완료 시 FE + CSS(애니메이션 효과)
  */
 
@@ -31,11 +31,12 @@ const RegisterComplete = () => {
           <div className="background"></div>
           <div className="checkmark draw"></div>
         </div>
-        <h2 className="title1">그린페이 가입완료</h2>
-        <Link to="/payment/accnt_register">
-          <button className="submit-btn">계좌 등록</button>
-        </Link>
-      </div>
+            <h2 className='title1'>그린페이 등록완료</h2>
+            <p>계좌를 연결하여 그린페이 가입을 완료해주세요</p>
+            <Link to="/payment/accnt_register">
+                <button className='submit-btn'>계좌 연결</button>
+            </Link>
+            </div>
     </div>
   );
 };

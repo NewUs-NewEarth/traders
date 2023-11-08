@@ -1,6 +1,5 @@
 import React from "react";
-import { Route, Switch } from "react-router-dom";
-import GreenPay from "./components/payment/GreenPay";
+import { Link, Route, Switch } from "react-router-dom";
 import PayRegister from "./components/payment/PayRegister";
 import ProductDetails from "./components/product/ProductDetails";
 import ProductRegistration from "./components/product/ProductRegistration";
@@ -29,7 +28,6 @@ import AccountRegister from "./components/payment/AccountRegister";
 import Confetti from "./components/payment/Confetti";
 import PayMgmt from "./components/payment/PayMgmt";
 import RegisterComplete from "./components/payment/RegisterComplete";
-import RegisterStep4 from "./components/payment/RegisterStep4";
 import TransferGpay from "./components/payment/TransferGpay";
 import ProductListHeader from "./components/product/ProductListHeader";
 import ProductUpdate from "./components/product/ProductUpdate";
@@ -40,6 +38,9 @@ import LoadingLeaf from "./components/util/LoadingLeaf";
 import { OfficialLoading } from "./components/util/OfficialLoading";
 import PrivateRoute from "./components/util/PrivateRoute";
 import "./styles/global.css";
+import { BrowserRouter } from "react-router-dom/cjs/react-router-dom.min";
+import PayLanding from "./components/payment/PayLanding";
+import GreenPay from "./components/payment/GreenPay";
 import { BsArrowUpCircle } from "react-icons/bs";
 import { scrollToTop, TopButton } from "./components/layout/PublicComponents";
 
@@ -81,6 +82,12 @@ function App() {
             <Route component={ProductListHeader} path="/products" exact />
 
             <Route component={(Youtube, NewsList)} path="/news" exact />
+          {/* <TokenRefresher/> */}
+          <div className="Pretendard-Regular">
+            <Switch>
+              <Route path={["/", "/main"]} exact>
+                <MainView />
+              </Route>
 
             <Route component={CampaignList} path="/campaign" exact />
 
@@ -122,25 +129,37 @@ function App() {
               path="/chat/roomNum/:roomNum"
               exact
             />
-
+            <PrivateRoute component={ChatList} path="/chat/list" exact />
             <PrivateRoute component={ChatList} path="/chat/list" exact />
 
-            {/* 결제 관련 */}
+              {/* 결제 관련 */}
 
-            <Route path="/payment" exact>
-              <GreenPay />
-            </Route>
-            <Route path="/payment/gpay_register" component={PayRegister} />
-            <Route path="/payment/accnt_register" component={AccountRegister} />
-            <Route path="/payment/payMgmt" component={PayMgmt} />
-            <Route path="/pay3">
-              <RegisterStep4 />
-            </Route>
-            <Route path="/payment/transfer/:id">
-              <TransferGpay />
-            </Route>
+              <Route path="/payment" exact>
+                <PayLanding />
+              </Route>
+              <Route path="/payment/gpay_register" component={PayRegister} exact/>
+              <Route path="/payment/accnt_register" component={AccountRegister} exact/>
+              <Route path="/payment/myPay" component={PayMgmt} exact/>
+              <Route path="/payment/accnt" component={RegisterComplete}  exact/>
+              <Route path="/payment/payIntro" component={GreenPay}  exact/>
+              <Route path="/payment/transfer/:id" >
+                <TransferGpay />
+              </Route>
 
-            <Route path="/progress" exact></Route>
+              <Route path="/progress" exact></Route>
+
+              <Route path="/loading1">
+                <LoadingLeaf />
+              </Route>
+              <Route path="/loading2">
+                <OfficialLoading />
+              </Route>
+              <Route path="/Random">
+                <RegisterComplete />
+                <Confetti />
+              </Route>
+            </Switch>
+          </div>
 
             <Route path="/loading1">
               <LoadingLeaf />
